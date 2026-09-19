@@ -13,3 +13,6 @@ coverage.txt
 
 # OMC operational state
 /.omc/
+
+# Large upstream reference PDFs (local support material, not versioned)
+/references/

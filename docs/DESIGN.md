@@ -4,6 +4,13 @@
 doc records the architecture and the roadmap; the "why" is backed by research
 into the existing tool landscape (see the bottom).
 
+> **API knowledge base**: the FortiOS REST mechanics and per-version object model
+> that the implementation wraps are documented in [`docs/api/`](api/) —
+> [`rest-conventions.md`](api/rest-conventions.md) (auth, cmdb/monitor, envelope,
+> `action=schema`, error codes), the `objects-*.md` field references, and
+> [`version-matrix.md`](api/version-matrix.md) (authoritative 7.4/7.6/8.0 field
+> deltas, extracted from the CLI References via `tools/fortios-cli-extract.py`).
+
 ## Architecture (mirrors pve-cli)
 
 ```
@@ -61,9 +68,13 @@ block on hand-writing hundreds of cmdb tables.
 
 ## Open questions
 
-1. Is the per-object cmdb field schema stable/machine-readable enough across
-   7.2/7.4/7.6/8.0 to drive codegen (M5), or is the raw passthrough the only
-   maintainable route to "full coverage"?
+1. ~~Is the per-object cmdb field schema stable across 7.2/7.4/7.6/8.0?~~
+   **Answered** (see [`api/version-matrix.md`](api/version-matrix.md)): the schema
+   shape is stable but the field set drifts every release (e.g. post-quantum
+   `addke*` added in 7.6; FortiAI admin fields and ZTNA policy fields in 8.0;
+   `hw-model`→`hw-version` rename in 8.0). So M5 codegen must read `?action=schema`
+   from the target build rather than bake a fixed table; the `api` escape hatch
+   already gives full coverage on every version with no code change.
 2. Should FortiManager be a first-class backend (M6) given it fronts both
    FortiGates and FortiSwitches?
 3. Which `switch-controller.*` endpoints make a genuinely useful FortiSwitch

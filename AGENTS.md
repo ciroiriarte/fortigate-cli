@@ -8,6 +8,12 @@ Guidance for AI agents (and humans) working in this repo.
 API, modeled on [`pve-cli`](https://github.com/ciroiriarte/pve-cli). Go +
 spf13/cobra, single static binary. See `docs/DESIGN.md` for architecture/roadmap.
 
+**FortiOS API reference**: `docs/api/` documents the REST conventions and the
+per-version (7.4/7.6/8.0) object model this CLI wraps — read it before adding
+commands. When in doubt about a field/enum/default for a specific build, run
+`fgt api GET "cmdb/<path>?action=schema"` against that box: FortiOS self-describes
+its schema per build, which is more authoritative than any static doc.
+
 ## Layout
 
 - `cmd/fgt/` — entrypoint only.
