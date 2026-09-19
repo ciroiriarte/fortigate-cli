@@ -1,0 +1,113 @@
+// Package protocol models the FortiOS REST API response envelope and error
+// shape, and decodes them into typed values for the rest of the CLI.
+//
+// A FortiOS API response is a JSON object like:
+//
+//	{
+//	  "http_method": "GET",
+//	  "results": [ ... ] | { ... },
+//	  "vdom": "root",
+//	  "path": "firewall",
+//	  "name": "address",
+//	  "status": "success",
+//	  "http_status": 200,
+//	  "serial": "FGT...",
+//	  "version": "v7.6.0"
+//	}
+//
+// The payload lives under "results"; everything else is metadata.
+package protocol
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+// Kind categorizes an APIError for exit-code mapping.
+type Kind string
+
+const (
+	KindTransport Kind = "transport" // network/TLS failure, no HTTP response
+	KindAuth      Kind = "auth"      // 401/403
+	KindNotFound  Kind = "not_found" // 404 / 424
+	KindConflict  Kind = "conflict"  // 4xx validation/duplicate
+	KindServer    Kind = "server"    // 5xx
+	KindAPI       Kind = "api"       // other non-2xx
+)
+
+// APIError is a decoded FortiOS error (or a transport failure).
+type APIError struct {
+	Kind       Kind
+	HTTPStatus int
+	// Code is the FortiOS numeric "error" field when present.
+	Code    int
+	Message string
+}
+
+func (e *APIError) Error() string {
+	if e.HTTPStatus > 0 {
+		return fmt.Sprintf("%s (http %d)", e.Message, e.HTTPStatus)
+	}
+	return e.Message
+}
+
+// Envelope is the standard FortiOS response wrapper.
+type Envelope struct {
+	Results    json.RawMessage `json:"results"`
+	Status     string          `json:"status"`
+	HTTPStatus int             `json:"http_status"`
+	VDOM       string          `json:"vdom"`
+	Serial     string          `json:"serial"`
+	Version    string          `json:"version"`
+	Error      int             `json:"error"`
+	CLIError   string          `json:"cli_error"`
+}
+
+// DecodeData unmarshals a success response body into out. It extracts the
+// "results" field when present, and otherwise decodes the whole body, so it
+// works for cmdb objects, monitor endpoints, and the odd action that returns a
+// bare object.
+func DecodeData(body []byte, out any) error {
+	if out == nil {
+		return nil
+	}
+	var env Envelope
+	if err := json.Unmarshal(body, &env); err == nil && len(env.Results) > 0 {
+		return json.Unmarshal(env.Results, out)
+	}
+	return json.Unmarshal(body, out)
+}
+
+// DecodeError builds an APIError from a non-2xx response.
+func DecodeError(status int, body []byte) *APIError {
+	e := &APIError{Kind: kindForStatus(status), HTTPStatus: status}
+	var env Envelope
+	if err := json.Unmarshal(body, &env); err == nil {
+		e.Code = env.Error
+		switch {
+		case env.CLIError != "":
+			e.Message = env.CLIError
+		case env.Status != "" && env.Status != "success":
+			e.Message = fmt.Sprintf("FortiOS returned status %q", env.Status)
+		}
+	}
+	if e.Message == "" {
+		e.Message = fmt.Sprintf("request failed with HTTP %d", status)
+	}
+	return e
+}
+
+func kindForStatus(status int) Kind {
+	switch {
+	case status == 401, status == 403:
+		return KindAuth
+	case status == 404, status == 424:
+		return KindNotFound
+	case status >= 500:
+		return KindServer
+	case status >= 400:
+		return KindConflict
+	default:
+		return KindAPI
+	}
+}

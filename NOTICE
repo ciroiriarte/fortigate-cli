@@ -1,0 +1,13 @@
+fortigate-cli
+Copyright 2026 Ciro Iriarte
+
+This product includes software developed as an unofficial, community project.
+
+This software is not affiliated with, authorized, maintained, sponsored, or
+endorsed by Fortinet, Inc. "FortiGate", "FortiOS", "FortiSwitch", "FortiLink",
+and "FortiManager" are trademarks or registered trademarks of Fortinet, Inc.
+They are used here only to describe interoperability with Fortinet products.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this software except in compliance with the License. You may obtain a copy of
+the License at http://www.apache.org/licenses/LICENSE-2.0

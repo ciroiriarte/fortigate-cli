@@ -1,0 +1,15 @@
+# Build output
+/fgt
+/dist/
+
+# Go
+*.test
+*.out
+coverage.txt
+
+# Editors / OS
+.DS_Store
+*.swp
+
+# OMC operational state
+/.omc/

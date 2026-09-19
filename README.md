@@ -1,0 +1,105 @@
+# fortigate-cli (`fgt`)
+
+> **Unofficial** remote-first CLI for **FortiGate / FortiOS** — and the
+> FortiLink-managed **FortiSwitch** units behind it — driven entirely over the
+> FortiOS REST API. Nothing is installed on the device.
+>
+> Not affiliated with or endorsed by Fortinet, Inc. FortiGate, FortiOS,
+> FortiSwitch and FortiLink are trademarks of Fortinet, Inc.
+
+`fgt` is an [OpenStack-Client][osc]-inspired `resource action` CLI in the spirit
+of [`pve-cli`][pvecli]: a single static Go binary that talks to a FortiGate's
+`/api/v2/` REST surface — `cmdb/...` for configuration, `monitor/...` for status.
+
+## Why
+
+Every existing open-source option is either a **read-only/stale CLI** or an
+**importable Python library** (fortiosapi — now archived, fortigate-api, pyFGT,
+…). Fortinet's own automation ships as an Ansible collection and a Terraform
+provider, but there is **no standalone CLI binary**. `fgt` fills that gap.
+
+## Design in one breath
+
+- **Remote-first**: pure REST client, no agent on the box.
+- **Hybrid coverage**: curated, ergonomic commands for common objects **plus**
+  an `fgt api` / raw escape hatch so **every** `cmdb`/`monitor` endpoint is
+  reachable without waiting for a hand-written wrapper.
+- **cmdb vs monitor** split is explicit; `--vdom` scopes any call.
+- **Auth**: FortiOS REST **API token** (`Authorization: Bearer`), HTTPS enforced.
+  Secrets come from the OS keyring or an env var, never a flag by default.
+  Session (`/logincheck`) auth is a later phase.
+- **Output**: `table` (default), `json`, `yaml`, `csv`, `value`.
+
+## Install / build
+
+Requires Go 1.22+.
+
+```sh
+git clone https://github.com/ciroiriarte/fortigate-cli
+cd fortigate-cli
+go mod tidy      # first build resolves the dependency graph
+make build       # produces ./fgt
+```
+
+## Configure
+
+Create a REST-API admin + token on the FortiGate, then point `fgt` at it. The
+fastest path uses environment variables:
+
+```sh
+export FGT_CLI_SERVER="https://fw.example.com"
+export FGT_CLI_TOKEN="<rest-api-token>"
+# self-signed mgmt cert? pin it instead of --insecure:
+export FGT_CLI_TLS_FINGERPRINT="aa:bb:cc:..."
+```
+
+Or a config file at `~/.config/fortigate-cli/config.yaml` (kubeconfig-style
+profiles + contexts):
+
+```yaml
+current_context: lab
+contexts:
+  lab:
+    profile: lab-fw
+    vdom: root
+profiles:
+  lab-fw:
+    server: https://fw.example.com
+    auth:
+      type: token
+      secret_ref: keyring://fortigate-cli/lab-fw   # or env:FGT_CLI_TOKEN
+    tls:
+      fingerprint: "aa:bb:cc:..."
+```
+
+## Use
+
+```sh
+fgt system interface list          # live interface status (monitor)
+fgt firewall address list -o json  # cmdb objects as JSON
+fgt switch list                    # FortiLink-managed FortiSwitch units
+fgt config current                 # show resolved settings (secret redacted)
+
+# escape hatch — reach anything the API exposes:
+fgt api GET  cmdb/firewall/policy
+fgt api POST cmdb/firewall/address --data name=web --data 'subnet=10.0.0.0 255.255.255.0'
+fgt api PUT  cmdb/firewall/address/web --body '{"comment":"managed by fgt"}'
+fgt api DELETE cmdb/firewall/address/web
+```
+
+Global flags: `--server`, `--vdom`, `--token`, `-o/--format`, `-c/--column`,
+`--sort`, `--no-headers`, `--insecure`, `--tls-fingerprint`, `--debug`, `-y/--yes`.
+
+## Status
+
+Early scaffold (M1): transport, auth, config/keyring, output, the `api` escape
+hatch, and a first slice of curated commands (`system interface`,
+`firewall address`, `switch`). See [`docs/DESIGN.md`](docs/DESIGN.md) for the
+roadmap and the research that motivated it.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+[osc]: https://docs.openstack.org/python-openstackclient/latest/
+[pvecli]: https://github.com/ciroiriarte/pve-cli

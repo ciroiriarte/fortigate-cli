@@ -1,0 +1,58 @@
+# goreleaser config — builds static binaries + .deb/.rpm + archives on tag push.
+# The binary is built once with CGO_ENABLED=0 (fully static), so the resulting
+# packages install on any distro regardless of its stock Go version.
+# Validate locally with `goreleaser check`.
+version: 2
+
+project_name: fortigate-cli
+
+builds:
+  - id: fgt
+    main: ./cmd/fgt
+    binary: fgt
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/ciroiriarte/fortigate-cli/internal/version.Version={{ .Version }}
+      - -X github.com/ciroiriarte/fortigate-cli/internal/version.Commit={{ .ShortCommit }}
+      - -X github.com/ciroiriarte/fortigate-cli/internal/version.Date={{ .Date }}
+
+archives:
+  - id: default
+    ids: [fgt]
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - NOTICE
+      - README.md
+
+nfpms:
+  - id: packages
+    package_name: fortigate-cli
+    ids: [fgt]
+    formats: [deb, rpm]
+    maintainer: Ciro Iriarte <ciro.iriarte+software@gmail.com>
+    description: "Unofficial remote CLI for FortiGate / FortiOS (command: fgt)"
+    license: Apache-2.0
+    homepage: https://github.com/ciroiriarte/fortigate-cli
+    bindir: /usr/bin
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  disable: true
+
+release:
+  github:
+    owner: ciroiriarte
+    name: fortigate-cli
+  name_template: "v{{ .Version }}"
