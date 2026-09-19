@@ -56,7 +56,14 @@ block on hand-writing hundreds of cmdb tables.
   fields). Done: `firewall address`/`addrgrp`/`service custom`/`service group`/
   `policy`, `router static`, `system admin`/`dns` (singleton). `--set key=value`
   reaches any un-modeled field; ref child-tables (`srcaddr`, `member`, …) take
-  comma lists. Remaining: `system interface` write, `vpn ipsec`, richer columns.
+  comma lists. Remaining: `system interface` write, `vpn ipsec`, richer columns,
+  **dynamic routing** (`router/bgp`, `router/ospf`, `route-map`, `prefix-list`),
+  **VDOM administration** (`system/vdom` CRUD, inter-VDOM links) — distinct from
+  VDOM *scoping* (`--vdom`), which shipped in M1 — and **HA clustering**
+  (`system/ha` config + `monitor/system/ha-*` cluster/sync status).
+- **Hardware acceleration** (NPU) — `system/npu`, `npu-vlink` accelerated
+  inter-VDOM links, and per-interface/per-policy offload knobs (`auto-asic-offload`).
+  Advanced/appliance-focused; reachable via `api` today, curated later.
 - **M3 — FortiSwitch depth**: `switch-controller.*` — managed-switch port config,
   VLAN assignment, PoE, stacking/tier, firmware, plus port status from monitor.
 - **M4 — session auth** (`POST /logincheck`, cookie + `X-CSRFTOKEN`), so
