@@ -12,15 +12,6 @@ type Interface struct {
 	Alias  string `json:"alias"`
 }
 
-// FirewallAddress is a cmdb firewall/address object.
-type FirewallAddress struct {
-	Name    string `json:"name"`
-	Type    string `json:"type"`
-	Subnet  string `json:"subnet"`
-	FQDN    string `json:"fqdn"`
-	Comment string `json:"comment"`
-}
-
 // ManagedSwitch is a FortiLink-managed FortiSwitch as seen by the FortiGate's
 // switch-controller.
 type ManagedSwitch struct {

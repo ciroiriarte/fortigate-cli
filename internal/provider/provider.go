@@ -20,16 +20,30 @@ import (
 // ErrUnsupported is returned for operations a backend does not support.
 var ErrUnsupported = errors.New("operation not supported by this provider")
 
+// Object is a single cmdb object as returned by the API (untyped, so any object
+// on any FortiOS version round-trips without a per-object Go struct).
+type Object = map[string]any
+
 // Provider is the backend contract consumed by the CLI.
 type Provider interface {
 	Name() string
 
 	// ListInterfaces returns system interfaces (monitor surface).
 	ListInterfaces(ctx context.Context) ([]domain.Interface, error)
-	// ListFirewallAddresses returns firewall/address objects (cmdb surface).
-	ListFirewallAddresses(ctx context.Context) ([]domain.FirewallAddress, error)
 	// ListManagedSwitches returns FortiLink-managed FortiSwitch units.
 	ListManagedSwitches(ctx context.Context) ([]domain.ManagedSwitch, error)
+
+	// Generic cmdb CRUD. path is the cmdb-relative object path, e.g.
+	// "firewall/address" or "firewall.service/custom". These back the curated
+	// resource commands and work for any object on any FortiOS version.
+	CmdbList(ctx context.Context, path string) ([]Object, error)
+	CmdbGet(ctx context.Context, path, mkey string) (Object, error)
+	// CmdbCreate POSTs obj and returns the created object's mkey (which FortiOS
+	// may have auto-assigned).
+	CmdbCreate(ctx context.Context, path string, obj Object) (string, error)
+	// CmdbUpdate PUTs obj to path/mkey; a "" mkey targets a singleton object.
+	CmdbUpdate(ctx context.Context, path, mkey string, obj Object) error
+	CmdbDelete(ctx context.Context, path, mkey string) error
 
 	// Raw issues an arbitrary API call (backs `fgt api`). path is relative to
 	// /api/v2/, e.g. "cmdb/firewall/address".

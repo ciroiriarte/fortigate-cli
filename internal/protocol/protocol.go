@@ -21,6 +21,7 @@ package protocol
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // Kind categorizes an APIError for exit-code mapping.
@@ -59,8 +60,38 @@ type Envelope struct {
 	VDOM       string          `json:"vdom"`
 	Serial     string          `json:"serial"`
 	Version    string          `json:"version"`
-	Error      int             `json:"error"`
-	CLIError   string          `json:"cli_error"`
+	Revision   string          `json:"revision"`
+	// Mkey echoes the primary key on single-object and write (create/update)
+	// responses. It can decode from a JSON string or number, so it is captured
+	// raw and read via MkeyString.
+	Mkey     json.RawMessage `json:"mkey"`
+	Error    int             `json:"error"`
+	CLIError string          `json:"cli_error"`
+}
+
+// MkeyString returns the response mkey as a string, unquoting a JSON string and
+// stringifying a JSON number. Empty when absent.
+func (e *Envelope) MkeyString() string {
+	s := strings.TrimSpace(string(e.Mkey))
+	if s == "" || s == "null" {
+		return ""
+	}
+	if len(s) >= 2 && s[0] == '"' {
+		var out string
+		if err := json.Unmarshal(e.Mkey, &out); err == nil {
+			return out
+		}
+	}
+	return strings.Trim(s, `"`)
+}
+
+// DecodeEnvelope unmarshals just the response wrapper (no payload typing).
+func DecodeEnvelope(body []byte) (*Envelope, error) {
+	var env Envelope
+	if err := json.Unmarshal(body, &env); err != nil {
+		return nil, err
+	}
+	return &env, nil
 }
 
 // DecodeData unmarshals a success response body into out. It extracts the

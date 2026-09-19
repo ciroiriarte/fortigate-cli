@@ -155,6 +155,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(
 		newSystemCmd(a),
 		newFirewallCmd(a),
+		newRouterCmd(a),
 		newSwitchCmd(a),
 		newAPICmd(a),
 		newConfigCmd(a),

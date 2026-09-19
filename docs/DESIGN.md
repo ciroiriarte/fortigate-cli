@@ -48,11 +48,15 @@ block on hand-writing hundreds of cmdb tables.
 
 ## Roadmap
 
-- **M1 (this scaffold)** — transport/auth/config/output/protocol, `api` escape
-  hatch, first curated slice: `system interface`, `firewall address`, `switch`.
-- **M2 — curated CRUD** for high-value objects: firewall `policy`/`address`/
-  `service`/`addrgrp`, `system interface`/`admin`/`dns`, `router static`, `vpn`.
-  Add `create`/`show`/`set`/`delete` verbs on top of the generic client.
+- **M1** ✅ — transport/auth/config/output/protocol, `api` escape hatch, monitor
+  reads (`system interface`, `switch`).
+- **M2** 🚧 — curated CRUD via a **declarative resource framework**
+  (`internal/cli/resource.go`): generic cmdb `List/Get/Create/Update/Delete` on
+  the provider, and each object is a data declaration (path, mkey, columns,
+  fields). Done: `firewall address`/`addrgrp`/`service custom`/`service group`/
+  `policy`, `router static`, `system admin`/`dns` (singleton). `--set key=value`
+  reaches any un-modeled field; ref child-tables (`srcaddr`, `member`, …) take
+  comma lists. Remaining: `system interface` write, `vpn ipsec`, richer columns.
 - **M3 — FortiSwitch depth**: `switch-controller.*` — managed-switch port config,
   VLAN assignment, PoE, stacking/tier, firmware, plus port status from monitor.
 - **M4 — session auth** (`POST /logincheck`, cookie + `X-CSRFTOKEN`), so

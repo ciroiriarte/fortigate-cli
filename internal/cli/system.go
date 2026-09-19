@@ -10,9 +10,39 @@ func newSystemCmd(a *app) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "system",
 		Aliases: []string{"sys"},
-		Short:   "Inspect system-level configuration and status",
+		Short:   "Inspect and manage system-level configuration and status",
 	}
-	cmd.AddCommand(newInterfaceCmd(a))
+
+	admin := resource{
+		use: "admin", short: "Manage administrator accounts",
+		path: "system/admin", mkey: "name",
+		columns: []column{{field: "name"}, {field: "accprofile"},
+			{field: "trusthost1", header: "TRUSTHOST1"}, {field: "two-factor", header: "2FA"}},
+		fields: []fieldSpec{
+			{name: "accprofile", usage: "access profile (e.g. super_admin)"},
+			{name: "password", usage: "admin password"},
+			{name: "trusthost1", usage: `"<ip> <mask>" source restriction`},
+			{name: "two-factor", usage: "disable|fortitoken|email|sms"},
+			{name: "comments", usage: "free-text comment"},
+		},
+	}
+
+	dns := resource{
+		use: "dns", short: "Manage DNS settings", single: true,
+		path: "system/dns",
+		fields: []fieldSpec{
+			{name: "primary", usage: "primary DNS server IPv4"},
+			{name: "secondary", usage: "secondary DNS server IPv4"},
+			{name: "protocol", usage: "cleartext|dot|doh"},
+			{name: "dns-over-tls", usage: "disable|enable|enforce"},
+		},
+	}
+
+	cmd.AddCommand(
+		newInterfaceCmd(a),
+		a.newResourceCmd(admin),
+		a.newResourceCmd(dns),
+	)
 	return cmd
 }
 

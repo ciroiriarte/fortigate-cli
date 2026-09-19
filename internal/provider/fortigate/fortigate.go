@@ -5,9 +5,12 @@ package fortigate
 
 import (
 	"context"
+	"encoding/json"
 	"net/url"
+	"strings"
 
 	"github.com/ciroiriarte/fortigate-cli/internal/domain"
+	"github.com/ciroiriarte/fortigate-cli/internal/protocol"
 	"github.com/ciroiriarte/fortigate-cli/internal/provider"
 	"github.com/ciroiriarte/fortigate-cli/internal/transport"
 )
@@ -62,13 +65,73 @@ func (f *fortiGate) ListInterfaces(ctx context.Context) ([]domain.Interface, err
 	return out, nil
 }
 
-// ListFirewallAddresses reads the cmdb surface (configuration objects).
-func (f *fortiGate) ListFirewallAddresses(ctx context.Context) ([]domain.FirewallAddress, error) {
-	var out []domain.FirewallAddress
-	if err := f.cl.Do(ctx, &transport.Request{Method: "GET", Path: "cmdb/firewall/address"}, &out); err != nil {
+// cmdbPath joins the cmdb prefix with an object path and optional mkey.
+func cmdbPath(path, mkey string) string {
+	p := "cmdb/" + strings.Trim(path, "/")
+	if mkey != "" {
+		p += "/" + url.PathEscape(mkey)
+	}
+	return p
+}
+
+// CmdbList returns all objects at a cmdb path.
+func (f *fortiGate) CmdbList(ctx context.Context, path string) ([]provider.Object, error) {
+	var out []provider.Object
+	if err := f.cl.Do(ctx, &transport.Request{Method: "GET", Path: cmdbPath(path, "")}, &out); err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+// CmdbGet returns one object. FortiOS returns a single-object GET's results as
+// either a 1-element array or a bare object, so both are handled.
+func (f *fortiGate) CmdbGet(ctx context.Context, path, mkey string) (provider.Object, error) {
+	body, err := f.cl.DoRaw(ctx, &transport.Request{Method: "GET", Path: cmdbPath(path, mkey)})
+	if err != nil {
+		return nil, err
+	}
+	var arr []provider.Object
+	if err := protocol.DecodeData(body, &arr); err == nil && len(arr) > 0 {
+		return arr[0], nil
+	}
+	var obj provider.Object
+	if err := protocol.DecodeData(body, &obj); err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
+// CmdbCreate POSTs a new object and returns its (possibly auto-assigned) mkey.
+func (f *fortiGate) CmdbCreate(ctx context.Context, path string, obj provider.Object) (string, error) {
+	b, err := json.Marshal(obj)
+	if err != nil {
+		return "", err
+	}
+	body, err := f.cl.DoRaw(ctx, &transport.Request{Method: "POST", Path: cmdbPath(path, ""), Body: b})
+	if err != nil {
+		return "", err
+	}
+	env, err := protocol.DecodeEnvelope(body)
+	if err != nil {
+		return "", nil // created, but mkey unreadable
+	}
+	return env.MkeyString(), nil
+}
+
+// CmdbUpdate PUTs changed fields to path/mkey ("" mkey => singleton object).
+func (f *fortiGate) CmdbUpdate(ctx context.Context, path, mkey string, obj provider.Object) error {
+	b, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	_, err = f.cl.DoRaw(ctx, &transport.Request{Method: "PUT", Path: cmdbPath(path, mkey), Body: b})
+	return err
+}
+
+// CmdbDelete removes path/mkey.
+func (f *fortiGate) CmdbDelete(ctx context.Context, path, mkey string) error {
+	_, err := f.cl.DoRaw(ctx, &transport.Request{Method: "DELETE", Path: cmdbPath(path, mkey)})
+	return err
 }
 
 // ListManagedSwitches reports FortiLink-managed FortiSwitch units. These are

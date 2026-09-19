@@ -75,15 +75,29 @@ profiles:
 ## Use
 
 ```sh
-fgt system interface list          # live interface status (monitor)
-fgt firewall address list -o json  # cmdb objects as JSON
-fgt switch list                    # FortiLink-managed FortiSwitch units
-fgt config current                 # show resolved settings (secret redacted)
+# curated CRUD (list / show / create / set / delete) over cmdb objects:
+fgt firewall address list -o json
+fgt firewall address create web --type ipmask --subnet "10.0.0.0 255.255.255.0"
+fgt firewall address set web --comment "managed by fgt"
+fgt firewall addrgrp create webservers --member web,db
+fgt firewall policy create --name allow-web --srcintf port1 --dstintf port2 \
+    --srcaddr all --dstaddr web --service HTTPS --action accept
+fgt firewall policy list
+fgt router static create --dst "0.0.0.0 0.0.0.0" --gateway 10.0.0.1 --device port1
+fgt system dns set --primary 1.1.1.1 --secondary 8.8.8.8
+fgt firewall address delete web        # confirms first (pass -y to skip)
 
-# escape hatch — reach anything the API exposes:
+# any field not modeled as a typed flag is still reachable:
+fgt firewall policy set 3 --set "comments=updated" --set "nat=enable"
+
+# read-only status (monitor surface):
+fgt system interface list          # live interface status
+fgt switch list                    # FortiLink-managed FortiSwitch units
+fgt config current                 # resolved settings (secret redacted)
+
+# escape hatch — reach ANY endpoint on ANY FortiOS version:
 fgt api GET  cmdb/firewall/policy
-fgt api POST cmdb/firewall/address --data name=web --data 'subnet=10.0.0.0 255.255.255.0'
-fgt api PUT  cmdb/firewall/address/web --body '{"comment":"managed by fgt"}'
+fgt api GET  "cmdb/firewall/address?action=schema"
 fgt api DELETE cmdb/firewall/address/web
 ```
 
@@ -92,10 +106,15 @@ Global flags: `--server`, `--vdom`, `--token`, `-o/--format`, `-c/--column`,
 
 ## Status
 
-Early scaffold (M1): transport, auth, config/keyring, output, the `api` escape
-hatch, and a first slice of curated commands (`system interface`,
-`firewall address`, `switch`). See [`docs/DESIGN.md`](docs/DESIGN.md) for the
-roadmap and the research that motivated it.
+- **M1** ✅ — transport, auth, config/keyring, output, the `api` escape hatch.
+- **M2** 🚧 — curated CRUD (list/show/create/set/delete) via a declarative
+  resource framework: `firewall address`/`addrgrp`/`service custom`/`service
+  group`/`policy`, `router static`, `system admin`/`dns`, plus monitor reads
+  (`system interface`, `switch`). Adding an object is a ~15-line declaration.
+
+See [`docs/DESIGN.md`](docs/DESIGN.md) for the roadmap and
+[`docs/api/`](docs/api/) for the FortiOS REST + per-version object-model reference
+that the commands are built from.
 
 ## License
 
