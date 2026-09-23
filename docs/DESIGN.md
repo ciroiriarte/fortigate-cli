@@ -20,7 +20,7 @@ internal/
   provider/                → backend interface (Provider); New() is the one entry
     fortigate/             → FortiOS REST implementation (registers via init())
   transport/               → base HTTPS client: auth, TLS, retries, rate limit, VDOM
-  auth/                    → pluggable auth (token now; session later)
+  auth/                    → pluggable auth (API token + session/logincheck)
   config/                  → kubeconfig-style profiles+contexts; precedence resolve
   protocol/                → FortiOS response envelope + error decoding
   output/                  → table/json/yaml/csv/value renderer
@@ -40,7 +40,7 @@ block on hand-writing hundreds of cmdb tables.
 |---|---|
 | Config plane | `GET/POST/PUT/DELETE /api/v2/cmdb/<path>` |
 | Status plane | `GET /api/v2/monitor/<path>` |
-| Auth | `Authorization: Bearer <token>`; HTTPS enforced (transport refuses plaintext to non-loopback) |
+| Auth | API token (`Authorization: Bearer <token>`) or session (`/logincheck` cookie + `X-CSRFTOKEN`); HTTPS enforced (transport refuses plaintext to non-loopback) |
 | Multi-tenancy | `--vdom` / `FGT_CLI_VDOM` → `?vdom=` on every call |
 | Self-signed certs | pin SHA-256 fingerprint (preferred) or `--insecure` |
 | Write bodies | JSON objects (`--body`/`--data`), not form-encoding |
@@ -73,8 +73,11 @@ block on hand-writing hundreds of cmdb tables.
   Advanced/appliance-focused; reachable via `api` today, curated later.
 - **M3 — FortiSwitch depth**: `switch-controller.*` — managed-switch port config,
   VLAN assignment, PoE, stacking/tier, firmware, plus port status from monitor.
-- **M4 — session auth** (`POST /logincheck`, cookie + `X-CSRFTOKEN`), so
-  password admins work where tokens aren't provisioned.
+- **M4** ✅ — session auth (`POST /logincheck`, shared cookie jar +
+  `X-CSRFTOKEN` on writes), so password admins work where tokens aren't
+  provisioned. `auth.type: session` with `user` + a password (`secret_ref`,
+  `FGT_CLI_PASSWORD`, or `--password`); login is lazy and reused per invocation.
+  Token auth remains the default and automation-safe path.
 - **M5 — schema-driven scaffolding**: generate command/flag trees from FortiOS
   per-object cmdb schemas (each object exposes its own field schema) or from the
   Terraform provider's resource map, promoting raw endpoints into typed commands.
