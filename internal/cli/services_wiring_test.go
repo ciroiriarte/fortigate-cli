@@ -22,6 +22,13 @@ func TestServicesWiredIntoRoot(t *testing.T) {
 		{"system", "zone"},
 		{"system", "backup"},
 		{"system", "restore"},
+		{"system", "status"},
+		{"system", "api-user"},
+		{"system", "global"},
+		{"system", "settings"},
+		{"system", "automation", "trigger"},
+		{"system", "automation", "action"},
+		{"system", "automation", "stitch"},
 	} {
 		cmd, _, err := root.Find(path)
 		if err != nil || cmd.Name() != path[len(path)-1] {

@@ -63,6 +63,10 @@ func newSystemCmd(a *app) *cobra.Command {
 	)
 	// ntp/dhcp/snmp live in system_services.go to keep this file focused.
 	cmd.AddCommand(systemServiceCommands(a)...)
+	// REST-API admin + global/per-VDOM settings (system_admin.go) and automation
+	// stitches (system_automation.go).
+	cmd.AddCommand(systemAdminCommands(a)...)
+	cmd.AddCommand(systemAutomationCommands(a)...)
 	// config backup/restore (system_backup.go).
 	cmd.AddCommand(newBackupCmd(a), newRestoreCmd(a))
 	cmd.AddCommand(newStatusCmd(a))
