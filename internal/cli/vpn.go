@@ -1,5 +1,6 @@
-// Package cli exposes VPN IPsec commands over FortiOS's dotted vpn.ipsec cmdb path.
 package cli
+
+// vpn.go exposes VPN IPsec commands over FortiOS's dotted vpn.ipsec cmdb path.
 
 import "github.com/spf13/cobra"
 

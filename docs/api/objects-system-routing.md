@@ -148,6 +148,7 @@ Same envelope as cmdb (payload under `results`).
 | `monitor/system/status` | `serial`, `version` (e.g. `v8.0.1`), `build`, `hostname`, model, HA/VDOM state — the "what am I talking to" probe. |
 | `monitor/system/resource/usage` | CPU/mem/disk/session utilization; params `resource=`, `scope=`, `interval=`. |
 | `monitor/router/ipv4` | Active IPv4 RIB (dst, gateway, interface, type, distance/metric); paginated + filterable. `monitor/router/ipv6` for v6. |
+| `monitor/system/ha-statistics` | Per HA-cluster-member stats (serial, hostname, and per-build utilization/session counters). Backs `fgt system ha status`. **Field set is per-build and not statically modeled** — the command renders whatever the box returns; confirm exact keys against a live HA pair. Standalone units return a single member. |
 
 > `monitor/system/interface` returning an object keyed by name is why `fgt`'s
 > provider unmarshals it into a `map[string]…` and flattens to a slice.

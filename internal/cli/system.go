@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"strconv"
-
 	"github.com/spf13/cobra"
 
 	"github.com/ciroiriarte/fortigate-cli/internal/output"
@@ -73,7 +71,7 @@ func newInterfaceCmd(a *app) *cobra.Command {
 		Short:   "Manage/inspect system interfaces",
 	}
 	r := resource{
-		use: "interface", short: "system interface",
+		use:  "interface",
 		path: "system/interface", mkey: "name",
 		fields: []fieldSpec{
 			{name: "type", usage: "physical|vlan|aggregate|redundant|loopback|tunnel|..."},
@@ -135,7 +133,7 @@ func newHACmd(a *app) *cobra.Command {
 		Short: "Manage HA (High Availability) clustering",
 	}
 	r := resource{
-		use: "ha", short: "HA settings", single: true,
+		use: "ha", single: true,
 		path: "system/ha",
 		fields: []fieldSpec{
 			{name: "mode", usage: "standalone|a-a|a-p"},
@@ -167,18 +165,7 @@ func haStatusCmd(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			t := output.Tabular{
-				Columns: []string{"SERIAL", "HOSTNAME", "PRIORITY", "CPU%", "MEM%", "SESSIONS"},
-				Raw:     members,
-			}
-			for _, m := range members {
-				t.Rows = append(t.Rows, []string{
-					m.Serial, m.Hostname,
-					strconv.Itoa(m.Priority), strconv.Itoa(m.CPU),
-					strconv.Itoa(m.Memory), strconv.Itoa(m.Sessions),
-				})
-			}
-			return a.render(t)
+			return a.render(objectsTable(members))
 		},
 	}
 }

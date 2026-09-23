@@ -22,15 +22,3 @@ type ManagedSwitch struct {
 	State    string `json:"state"`
 	Firmware string `json:"os_version"`
 }
-
-// HAMember is one node of an HA cluster as reported by the monitor surface.
-// Field names track monitor/system/ha-statistics; json/yaml carries these typed
-// fields (the stable contract), while the table view is best-effort.
-type HAMember struct {
-	Serial   string `json:"serial_no"`
-	Hostname string `json:"hostname"`
-	Priority int    `json:"priority"`
-	CPU      int    `json:"cpu_usage"`
-	Memory   int    `json:"mem_usage"`
-	Sessions int    `json:"sessions"`
-}

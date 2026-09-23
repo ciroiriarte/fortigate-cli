@@ -164,12 +164,14 @@ func TestCmdbUpdateSingleton(t *testing.T) {
 }
 
 func TestHAStatus(t *testing.T) {
+	// HAStatus returns raw records: whatever the device reports surfaces verbatim
+	// (we do not model a per-build struct), so this asserts path + pass-through.
 	var got capture
 	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
 		got.method, got.path = r.Method, r.URL.Path
 		w.Write(envelope([]map[string]any{
-			{"serial_no": "FGT001", "hostname": "primary", "priority": 200, "cpu_usage": 5, "mem_usage": 40, "sessions": 1200},
-			{"serial_no": "FGT002", "hostname": "secondary", "priority": 100},
+			{"serial_no": "FGT001", "hostname": "primary", "sessions": 1200},
+			{"serial_no": "FGT002", "hostname": "secondary"},
 		}))
 	})
 	members, err := p.HAStatus(context.Background())
@@ -179,11 +181,11 @@ func TestHAStatus(t *testing.T) {
 	if got.method != "GET" || got.path != "/api/v2/monitor/system/ha-statistics" {
 		t.Errorf("ha-status hit %s %s", got.method, got.path)
 	}
-	if len(members) != 2 || members[0].Serial != "FGT001" || members[0].Priority != 200 {
+	if len(members) != 2 {
 		t.Fatalf("ha members = %v", members)
 	}
-	if members[0].Sessions != 1200 || members[1].Hostname != "secondary" {
-		t.Errorf("ha member fields = %v", members)
+	if members[0]["serial_no"] != "FGT001" || members[1]["hostname"] != "secondary" {
+		t.Errorf("ha member fields not passed through verbatim: %v", members)
 	}
 }
 

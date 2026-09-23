@@ -145,10 +145,11 @@ func (f *fortiGate) ListManagedSwitches(ctx context.Context) ([]domain.ManagedSw
 	return out, nil
 }
 
-// HAStatus reports HA cluster members from the monitor surface. On a standalone
+// HAStatus reports HA cluster members from the monitor surface, returned as raw
+// records so the exact per-build field set surfaces verbatim. On a standalone
 // unit FortiOS returns a single-member list.
-func (f *fortiGate) HAStatus(ctx context.Context) ([]domain.HAMember, error) {
-	var out []domain.HAMember
+func (f *fortiGate) HAStatus(ctx context.Context) ([]provider.Object, error) {
+	var out []provider.Object
 	if err := f.cl.Do(ctx, &transport.Request{Method: "GET", Path: "monitor/system/ha-statistics"}, &out); err != nil {
 		return nil, err
 	}

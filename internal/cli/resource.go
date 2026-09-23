@@ -351,6 +351,38 @@ func cellValue(v any) string {
 	}
 }
 
+// objectsTable renders a slice of untyped objects as a table whose columns are
+// the sorted union of all keys present. Used for monitor reads whose per-build
+// field set is not modeled as a Go struct; Raw carries the objects unchanged so
+// json/yaml stays faithful to the device.
+func objectsTable(objs []provider.Object) output.Tabular {
+	seen := map[string]struct{}{}
+	for _, o := range objs {
+		for k := range o {
+			seen[k] = struct{}{}
+		}
+	}
+	keys := make([]string, 0, len(seen))
+	for k := range seen {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	cols := make([]string, len(keys))
+	for i, k := range keys {
+		cols[i] = strings.ToUpper(k)
+	}
+	t := output.Tabular{Columns: cols, Raw: objs}
+	for _, o := range objs {
+		row := make([]string, len(keys))
+		for i, k := range keys {
+			row[i] = cellValue(o[k])
+		}
+		t.Rows = append(t.Rows, row)
+	}
+	return t
+}
+
 // keyValueTable renders a single object as a sorted KEY/VALUE table, keeping the
 // full object as Raw so json/yaml output is complete.
 func keyValueTable(obj provider.Object) output.Tabular {
