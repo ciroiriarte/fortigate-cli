@@ -37,6 +37,10 @@ Update fields on a custom object
 \fB--udp-portrange\fP=""
 	UDP ports
 
+.PP
+\fB--upsert\fP[=false]
+	if the object doesn't exist, create it instead (PUT→POST fallback)
+
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 \fB-c\fP, \fB--column\fP=[]
@@ -53,6 +57,10 @@ Update fields on a custom object
 .PP
 \fB-o\fP, \fB--format\fP=""
 	output format: table|json|yaml|csv|value
+
+.PP
+\fB--global\fP[=false]
+	target the global scope (multi-VDOM) instead of a VDOM
 
 .PP
 \fB--insecure\fP[=false]

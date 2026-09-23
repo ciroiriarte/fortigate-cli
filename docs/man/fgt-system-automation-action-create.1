@@ -1,0 +1,131 @@
+.nh
+.TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
+
+.SH NAME
+fgt-system-automation-action-create - Create a action object
+
+
+.SH SYNOPSIS
+\fBfgt system automation action create [name] [flags]\fP
+
+
+.SH DESCRIPTION
+Create a action object
+
+
+.SH OPTIONS
+\fB--action-type\fP=""
+	email|alert|disable-ssid|system-actions|webhook|cli-script|aws-lambda|azure-function|...
+
+.PP
+\fB--description\fP=""
+	free-text description
+
+.PP
+\fB--email-subject\fP=""
+	email subject
+
+.PP
+\fB--email-to\fP=""
+	recipient name(s), comma-separated
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for create
+
+.PP
+\fB--http-body\fP=""
+	webhook body
+
+.PP
+\fB--message\fP=""
+	message body
+
+.PP
+\fB--method\fP=""
+	post|put|get|patch|delete (webhook)
+
+.PP
+\fB--minimum-interval\fP=""
+	rate-limit seconds
+
+.PP
+\fB--set\fP=[]
+	set an arbitrary field: --set key=value (repeatable; value may be a,b for ref lists)
+
+.PP
+\fB--uri\fP=""
+	webhook URI
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB-c\fP, \fB--column\fP=[]
+	select/order output columns (repeatable)
+
+.PP
+\fB--context\fP=""
+	config context to use
+
+.PP
+\fB--debug\fP[=false]
+	log request/response metadata to stderr
+
+.PP
+\fB-o\fP, \fB--format\fP=""
+	output format: table|json|yaml|csv|value
+
+.PP
+\fB--global\fP[=false]
+	target the global scope (multi-VDOM) instead of a VDOM
+
+.PP
+\fB--insecure\fP[=false]
+	skip TLS verification (footgun)
+
+.PP
+\fB--no-headers\fP[=false]
+	omit table/csv headers
+
+.PP
+\fB--password\fP=""
+	admin password for session auth (prefer a secret_ref or FGT_CLI_PASSWORD)
+
+.PP
+\fB--profile\fP=""
+	config profile to use
+
+.PP
+\fB--server\fP=""
+	FortiGate API base URL (e.g. https://fw.example.com)
+
+.PP
+\fB--sort\fP=""
+	sort by column (NAME[:asc|desc])
+
+.PP
+\fB--tls-fingerprint\fP=""
+	pin the server cert SHA-256 fingerprint
+
+.PP
+\fB--token\fP=""
+	REST API token (prefer a config secret_ref or FGT_CLI_TOKEN)
+
+.PP
+\fB--user\fP=""
+	admin username for session auth (or FGT_CLI_USER)
+
+.PP
+\fB--vdom\fP=""
+	target VDOM (default: device global/root)
+
+.PP
+\fB--wide\fP[=false]
+	do not truncate wide table columns
+
+.PP
+\fB-y\fP, \fB--yes\fP[=false]
+	assume yes for destructive confirmations
+
+
+.SH SEE ALSO
+\fBfgt-system-automation-action(1)\fP

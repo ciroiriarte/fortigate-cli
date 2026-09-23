@@ -50,6 +50,10 @@ Update fields on a authentication-rule object
 	ingress interface(s)
 
 .PP
+\fB--upsert\fP[=false]
+	if the object doesn't exist, create it instead (PUT→POST fallback)
+
+.PP
 \fB--users\fP=""
 	local user(s)
 
@@ -69,6 +73,10 @@ Update fields on a authentication-rule object
 .PP
 \fB-o\fP, \fB--format\fP=""
 	output format: table|json|yaml|csv|value
+
+.PP
+\fB--global\fP[=false]
+	target the global scope (multi-VDOM) instead of a VDOM
 
 .PP
 \fB--insecure\fP[=false]

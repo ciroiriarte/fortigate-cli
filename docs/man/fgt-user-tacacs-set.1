@@ -45,6 +45,10 @@ Update fields on a tacacs object
 \fB--set\fP=[]
 	set an arbitrary field: --set key=value (repeatable; value may be a,b for ref lists)
 
+.PP
+\fB--upsert\fP[=false]
+	if the object doesn't exist, create it instead (PUT→POST fallback)
+
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 \fB-c\fP, \fB--column\fP=[]
@@ -61,6 +65,10 @@ Update fields on a tacacs object
 .PP
 \fB-o\fP, \fB--format\fP=""
 	output format: table|json|yaml|csv|value
+
+.PP
+\fB--global\fP[=false]
+	target the global scope (multi-VDOM) instead of a VDOM
 
 .PP
 \fB--insecure\fP[=false]

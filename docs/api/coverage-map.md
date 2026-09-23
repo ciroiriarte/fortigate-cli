@@ -12,7 +12,7 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 | Namespace | Objects | Status | Notes |
 |---|---:|---|---|
 | `firewall` | 92 | partial | address/addrgrp/service×2/policy/vip/vip-group/ippool/central-snat-map/schedule(onetime,recurring)/shaper(traffic,per-ip)/shaping-policy ✅; DoS-policy/proxy-policy ⭕ |
-| `system` | 181 | partial | admin/dns/interface/vdom/ha/ntp/zone ✅; sdwan ✅ (settings/zone/member/health-check/service); dhcp server ✅; snmp sysinfo/community/user ✅; central-management/fortiguard ✅; ha adds `status` from monitor; config backup/restore ✅; npu 🎫#24; api-user/automation ⭕ |
+| `system` | 181 | partial | admin/dns/interface/vdom/ha/ntp/zone/global/settings ✅; sdwan ✅; dhcp server ✅; snmp/central-management/fortiguard ✅; api-user + automation trigger/action/stitch ✅; `status` (version+identity) & `ha status` from monitor; config backup/restore ✅; npu 🎫#24 |
 | `router` | 29 | partial | static/policy/bgp/ospf/route-map/prefix-list/access-list ✅ (bgp/ospf singletons; child-tables via `--set`); rip/isis/multicast/bfd ⭕ |
 | `user` | 26 | partial | local/group/ldap/radius/tacacs+ ✅ (`fgt user`); saml/fsso/setting/peer/certificate ⭕ |
 | `vpn` | 24 | partial | ipsec phase1-interface/phase2-interface ✅; ssl-vpn ✅ (`fgt vpn ssl` settings/authentication-rule/portal + `sessions` from monitor); certificate/l2tp/pptp ⭕ |
@@ -41,8 +41,8 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 **Tier 2 — ops/infrastructure**
 - System services — ✅ `system.snmp/*`, `system/ntp`, `system/central-management`, `system/fortiguard`, `system/zone` curated
 - Certificates — `certificate/{local,ca,remote}`, `vpn/certificate`
-- Automation stitches — `system/automation-{trigger,action,stitch}`
-- REST API bootstrap — `system/api-user`; per-VDOM `system/settings`, `system/global`
+- Automation stitches — ✅ `system/automation-{trigger,action,stitch}` curated
+- REST API bootstrap — ✅ `system/api-user`, per-VDOM `system/settings`, `system/global` curated
 
 **Tier 3 — advanced/conditional**
 - Wireless controller (FortiAP), ZTNA, WAN-opt/explicit-proxy, DLP, endpoint/extender, CASB, videofilter.
