@@ -61,7 +61,7 @@ func newLogCmd(a *app) *cobra.Command {
 			{name: "source-ip", usage: "source IP"},
 			{name: "enc-algorithm", usage: "high|low|disable|high-medium"},
 			{name: "certificate", usage: "client certificate"},
-			{name: "serial", usage: "FortiAnalyzer serial"},
+			{name: "serial", kind: kindRefList, usage: "FortiAnalyzer serial(s), comma-separated (child-table keyed by name)"},
 		},
 	}
 
