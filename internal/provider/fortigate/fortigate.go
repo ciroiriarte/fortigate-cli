@@ -35,10 +35,12 @@ func (f *fortiGate) ListInterfaces(ctx context.Context) ([]domain.Interface, err
 		Name  string `json:"name"`
 		Alias string `json:"alias"`
 		IP    string `json:"ip"`
-		Mask  string `json:"mask"`
-		Link  bool   `json:"link"`
-		Type  string `json:"type"`
-		VDOM  string `json:"vdom"`
+		// mask shape varies by build (dotted string on some, numeric prefix
+		// length on others), so decode it tolerantly; it is not rendered.
+		Mask any    `json:"mask"`
+		Link bool   `json:"link"`
+		Type string `json:"type"`
+		VDOM string `json:"vdom"`
 	}
 	if err := f.cl.Do(ctx, &transport.Request{Method: "GET", Path: "monitor/system/interface"}, &raw); err != nil {
 		return nil, err
