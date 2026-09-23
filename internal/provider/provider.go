@@ -52,6 +52,10 @@ type Provider interface {
 	CmdbUpdate(ctx context.Context, path, mkey string, obj Object) error
 	CmdbDelete(ctx context.Context, path, mkey string) error
 
+	// Schema returns a cmdb object's field schema for the target build
+	// (GET cmdb/<path>?action=schema) — the authoritative, per-version field set
+	// FortiOS describes about itself. Backs `fgt schema`.
+	Schema(ctx context.Context, path string) (Object, error)
 	// Raw issues an arbitrary API call (backs `fgt api`). path is relative to
 	// /api/v2/, e.g. "cmdb/firewall/address".
 	Raw(ctx context.Context, method, path string, params url.Values, body []byte) ([]byte, error)

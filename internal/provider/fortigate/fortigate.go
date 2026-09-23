@@ -168,6 +168,25 @@ func (f *fortiGate) SSLSessions(ctx context.Context) ([]provider.Object, error) 
 	return out, nil
 }
 
+// Schema returns a cmdb object's field schema (GET cmdb/<path>?action=schema).
+// FortiOS self-describes each object per build, so this is more authoritative
+// than any static doc.
+func (f *fortiGate) Schema(ctx context.Context, path string) (provider.Object, error) {
+	body, err := f.cl.DoRaw(ctx, &transport.Request{
+		Method: "GET",
+		Path:   cmdbPath(path, ""),
+		Query:  url.Values{"action": {"schema"}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	var obj provider.Object
+	if err := protocol.DecodeData(body, &obj); err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
 // Raw backs `fgt api` / `fgt raw`.
 func (f *fortiGate) Raw(ctx context.Context, method, path string, params url.Values, body []byte) ([]byte, error) {
 	return f.cl.DoRaw(ctx, &transport.Request{
