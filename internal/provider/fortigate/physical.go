@@ -44,10 +44,12 @@ func (f *fortiGate) ListTransceivers(ctx context.Context) ([]domain.Transceiver,
 	return out, nil
 }
 
-// ListSensors reads monitor/system/sensor-info (PSU/fan/temperature/voltage).
+// ListSensors reads monitor/system/sensor-info (power/fan/temperature/voltage).
 //
-// Field mapping assumed from documented shape; verify against a live build via
-// `fgt api GET 'monitor/system/sensor-info?action=schema'`.
+// Field mapping is aligned to the documented monitor/system/sensor-info shape
+// (id/name/type/value/alarm + a nested "thresholds" object); still verify against
+// a specific live build via `fgt api GET 'monitor/system/sensor-info?action=schema'`,
+// since hardware sensors over REST exist only on some models.
 //
 // Same tolerance and absent-hardware contract as ListTransceivers.
 func (f *fortiGate) ListSensors(ctx context.Context) ([]domain.Sensor, error) {
@@ -201,6 +203,12 @@ func decodeTransceiver(nr namedRecord) domain.Transceiver {
 	return t
 }
 
+// decodeSensor maps one sensor-info record onto domain.Sensor. The PRIMARY schema
+// is the documented monitor/system/sensor-info shape — id/name/type/value/alarm
+// plus a nested "thresholds" object that is now the main source of limits. The
+// flat/alternative field spellings are KEPT as tolerant fallbacks so the /select
+// variant and odd builds still degrade gracefully; missing/renamed/retyped fields
+// never panic. Raw is the verbatim device record for json/yaml passthrough.
 func decodeSensor(nr namedRecord) domain.Sensor {
 	rec := nr.rec
 	name := getString(rec, "name", "sensor", "label")
@@ -208,13 +216,34 @@ func decodeSensor(nr namedRecord) domain.Sensor {
 		name = nr.name // keyed-collection key, kept out of Raw
 	}
 	return domain.Sensor{
-		Name:   name,
-		Type:   getString(rec, "type", "category", "sensor_type"),
-		Value:  floatPtr(firstVal(rec, "value", "reading", "curr", "current")),
-		Unit:   getString(rec, "unit", "units"),
-		Status: getString(rec, "status", "state", "alarm_status", "health"),
-		Alarm:  boolPtr(firstVal(rec, "alarm", "alarm_flag", "in_alarm", "fault")),
-		Raw:    rec,
+		ID:         getString(rec, "id", "sensor_id"),
+		Name:       name,
+		Type:       getString(rec, "type", "category", "sensor_type"),
+		Value:      floatPtr(firstVal(rec, "value", "reading", "curr", "current")),
+		Unit:       getString(rec, "unit", "units"),
+		Status:     getString(rec, "status", "state", "alarm_status", "health"),
+		Alarm:      boolPtr(firstVal(rec, "alarm", "alarm_flag", "in_alarm", "fault")),
+		Thresholds: decodeSensorThresholds(rec),
+		Raw:        rec,
+	}
+}
+
+// decodeSensorThresholds reads the six sensor bounds. The primary source is the
+// nested "thresholds" object; when a build omits it, the same keys are read flat
+// off the record as a fallback. Each bound is optional — an absent or empty
+// "thresholds":{} yields all-nil bounds (no basis to grade against).
+func decodeSensorThresholds(rec map[string]any) domain.SensorThresholds {
+	src := rec
+	if nested, ok := rec["thresholds"].(map[string]any); ok {
+		src = nested // documented primary path (may be empty {} → all-nil)
+	}
+	return domain.SensorThresholds{
+		LowerNonRecoverable: floatPtr(firstVal(src, "lower_non_recoverable")),
+		LowerCritical:       floatPtr(firstVal(src, "lower_critical")),
+		LowerNonCritical:    floatPtr(firstVal(src, "lower_non_critical")),
+		UpperNonCritical:    floatPtr(firstVal(src, "upper_non_critical")),
+		UpperCritical:       floatPtr(firstVal(src, "upper_critical")),
+		UpperNonRecoverable: floatPtr(firstVal(src, "upper_non_recoverable")),
 	}
 }
 

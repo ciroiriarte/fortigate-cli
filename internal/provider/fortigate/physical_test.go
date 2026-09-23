@@ -275,6 +275,118 @@ func TestListSensors(t *testing.T) {
 	}
 }
 
+// TestListSensorsRealSchema feeds a representative slice of the documented
+// monitor/system/sensor-info payload — a voltage with full two-sided thresholds, a
+// temperature with only upper_* bounds, a temperature with an empty thresholds:{},
+// and a fan — and asserts id/name/type/value/alarm and the nested thresholds parse
+// (nil for absent bounds, all-nil for {}), with .Raw carrying the record verbatim.
+func TestListSensorsRealSchema(t *testing.T) {
+	var got capture
+	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		got.method, got.path = r.Method, r.URL.Path
+		w.Write(envelope([]map[string]any{
+			{
+				"id": "voltage.mac_avs_1v", "name": "MAC_AVS 1V", "type": "voltage",
+				"value": 0.99, "alarm": false,
+				"thresholds": map[string]any{
+					"lower_non_recoverable": 0.8724, "lower_critical": 0.892, "lower_non_critical": 0.9214,
+					"upper_non_critical": 1.0782, "upper_critical": 1.1076, "upper_non_recoverable": 1.1272,
+				},
+			},
+			{
+				"id": "temperature.cpu_0_core_0", "name": "CPU 0 Core 0", "type": "temperature",
+				"value": 40.0, "alarm": false,
+				"thresholds": map[string]any{
+					"upper_non_critical": 95.0, "upper_critical": 100.0, "upper_non_recoverable": 105.0,
+				},
+			},
+			{
+				"id": "temperature.cpu_0_core_2", "name": "CPU 0 Core 2", "type": "temperature",
+				"value": 42.0, "alarm": false, "thresholds": map[string]any{},
+			},
+			{
+				"id": "fan.fan1", "name": "FAN1", "type": "fan",
+				"value": 2900.0, "alarm": false,
+				"thresholds": map[string]any{
+					"lower_non_recoverable": 500.0, "lower_critical": 1000.0, "lower_non_critical": 1500.0,
+					"upper_non_critical": 10000.0, "upper_critical": 11000.0, "upper_non_recoverable": 12000.0,
+				},
+			},
+		}))
+	})
+	sensors, err := p.ListSensors(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.path != "/api/v2/monitor/system/sensor-info" {
+		t.Errorf("sensor-info hit %s", got.path)
+	}
+	if len(sensors) != 4 {
+		t.Fatalf("want 4 sensors, got %d", len(sensors))
+	}
+
+	// Voltage: id/name/type/value/alarm and full two-sided thresholds.
+	v := sensors[0]
+	if v.ID != "voltage.mac_avs_1v" || v.Name != "MAC_AVS 1V" || v.Type != "voltage" {
+		t.Errorf("voltage identity wrong: %+v", v)
+	}
+	if v.Value == nil || *v.Value != 0.99 {
+		t.Errorf("voltage value = %v, want 0.99", v.Value)
+	}
+	if v.Alarm == nil || *v.Alarm {
+		t.Errorf("voltage alarm = %v, want explicit false", v.Alarm)
+	}
+	if v.Thresholds.LowerCritical == nil || *v.Thresholds.LowerCritical != 0.892 {
+		t.Errorf("voltage lower_critical = %v, want 0.892", v.Thresholds.LowerCritical)
+	}
+	if v.Thresholds.UpperCritical == nil || *v.Thresholds.UpperCritical != 1.1076 {
+		t.Errorf("voltage upper_critical = %v, want 1.1076", v.Thresholds.UpperCritical)
+	}
+	if !v.Thresholds.HasLower() || !v.Thresholds.HasUpper() {
+		t.Errorf("voltage should be two-sided: %+v", v.Thresholds)
+	}
+	if v.Raw["id"] != "voltage.mac_avs_1v" {
+		t.Errorf("voltage raw not passed through verbatim: %v", v.Raw)
+	}
+	// Raw carries the nested thresholds object untouched.
+	if th, ok := v.Raw["thresholds"].(map[string]any); !ok || th["upper_critical"] != 1.1076 {
+		t.Errorf("voltage raw thresholds not verbatim: %v", v.Raw["thresholds"])
+	}
+
+	// Temperature: only upper_* bounds; lower bounds must be nil.
+	tp := sensors[1]
+	if !tp.Thresholds.HasUpper() || tp.Thresholds.HasLower() {
+		t.Errorf("temperature should be upper-only: %+v", tp.Thresholds)
+	}
+	if tp.Thresholds.LowerCritical != nil || tp.Thresholds.LowerNonCritical != nil {
+		t.Errorf("temperature lower bounds should be nil: %+v", tp.Thresholds)
+	}
+	if tp.Thresholds.UpperNonCritical == nil || *tp.Thresholds.UpperNonCritical != 95.0 {
+		t.Errorf("temperature upper_non_critical = %v, want 95", tp.Thresholds.UpperNonCritical)
+	}
+
+	// Empty thresholds:{} → all bounds nil, no basis from thresholds.
+	empty := sensors[2]
+	if empty.Thresholds.Any() {
+		t.Errorf("empty thresholds should yield all-nil bounds: %+v", empty.Thresholds)
+	}
+	if empty.Value == nil || *empty.Value != 42.0 {
+		t.Errorf("empty-thresholds value = %v, want 42", empty.Value)
+	}
+	if empty.Alarm == nil || *empty.Alarm {
+		t.Errorf("empty-thresholds alarm = %v, want explicit false", empty.Alarm)
+	}
+
+	// Fan: two-sided thresholds parsed.
+	fan := sensors[3]
+	if fan.Type != "fan" || fan.Value == nil || *fan.Value != 2900.0 {
+		t.Errorf("fan decoded wrong: %+v", fan)
+	}
+	if fan.Thresholds.LowerCritical == nil || *fan.Thresholds.LowerCritical != 1000.0 {
+		t.Errorf("fan lower_critical = %v, want 1000", fan.Thresholds.LowerCritical)
+	}
+}
+
 // TestListSensors404 asserts the absent-hardware contract for sensors.
 func TestListSensors404(t *testing.T) {
 	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {

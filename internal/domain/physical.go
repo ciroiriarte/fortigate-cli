@@ -53,15 +53,55 @@ type Transceiver struct {
 	Raw         map[string]any `json:"-"`
 }
 
-// Sensor is one hardware sensor (PSU, fan, temperature, voltage) from
-// monitor/system/sensor-info. Value/Status/Alarm are optional; grading uses only
-// the device-supplied status text or alarm flag. Raw holds the original record.
+// SensorThresholds are the six IPMI-style bounds a sensor may carry in the nested
+// "thresholds" object of monitor/system/sensor-info. Every bound is optional (nil
+// when absent): a build may supply both sides, only one (e.g. temperature reports
+// only upper_*), or an empty object with no bound at all. Grading uses ONLY the
+// bounds the device supplies here — it never invents a limit.
+type SensorThresholds struct {
+	LowerNonRecoverable *float64 `json:"lower_non_recoverable,omitempty"`
+	LowerCritical       *float64 `json:"lower_critical,omitempty"`
+	LowerNonCritical    *float64 `json:"lower_non_critical,omitempty"`
+	UpperNonCritical    *float64 `json:"upper_non_critical,omitempty"`
+	UpperCritical       *float64 `json:"upper_critical,omitempty"`
+	UpperNonRecoverable *float64 `json:"upper_non_recoverable,omitempty"`
+}
+
+// Any reports whether at least one bound is present.
+func (th SensorThresholds) Any() bool {
+	return th.HasLower() || th.HasUpper()
+}
+
+// HasLower reports whether any lower (floor) bound is present.
+func (th SensorThresholds) HasLower() bool {
+	return th.LowerNonRecoverable != nil || th.LowerCritical != nil || th.LowerNonCritical != nil
+}
+
+// HasUpper reports whether any upper (ceiling) bound is present.
+func (th SensorThresholds) HasUpper() bool {
+	return th.UpperNonCritical != nil || th.UpperCritical != nil || th.UpperNonRecoverable != nil
+}
+
+// Sensor is one hardware sensor (PSU/power, fan, temperature, voltage) from
+// monitor/system/sensor-info. Value/Alarm and every Thresholds bound are optional;
+// grading uses only the device-supplied thresholds and alarm flag (Status is a
+// tolerant fallback for odd builds that report a flat status text). Raw holds the
+// original device record for faithful json/yaml passthrough.
 type Sensor struct {
-	Name   string         `json:"name"`
-	Type   string         `json:"type,omitempty"`
-	Value  *float64       `json:"value,omitempty"`
-	Unit   string         `json:"unit,omitempty"`
-	Status string         `json:"status,omitempty"`
-	Alarm  *bool          `json:"alarm,omitempty"`
-	Raw    map[string]any `json:"-"`
+	ID         string           `json:"id,omitempty"`
+	Name       string           `json:"name"`
+	Type       string           `json:"type,omitempty"`
+	Value      *float64         `json:"value,omitempty"`
+	Unit       string           `json:"unit,omitempty"`
+	Status     string           `json:"status,omitempty"`
+	Alarm      *bool            `json:"alarm,omitempty"`
+	Thresholds SensorThresholds `json:"thresholds"`
+	Raw        map[string]any   `json:"-"`
+}
+
+// HasBasis reports whether the device supplied anything to grade the value
+// against — any threshold bound or an explicit alarm flag. Without a basis a
+// sensor reading can only be reported N/A (never invented into PASS/FAIL).
+func (s Sensor) HasBasis() bool {
+	return s.Thresholds.Any() || s.Alarm != nil
 }

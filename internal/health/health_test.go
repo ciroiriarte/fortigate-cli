@@ -118,6 +118,87 @@ func TestSensorGrading(t *testing.T) {
 	}
 }
 
+// TestSensorThresholdGrading grades against the documented nested thresholds and
+// alarm flag: within-limits + alarm false → PASS; at/above the non-critical bound
+// → WARN; at/above the critical bound → CRITICAL; alarm true → CRITICAL; empty
+// thresholds + alarm false → PASS (device basis); no alarm + empty thresholds →
+// N/A (hard rule); a one-sided bound is noted honestly on PASS.
+func TestSensorThresholdGrading(t *testing.T) {
+	// Full two-sided voltage thresholds (mirrors the real fixture).
+	full := domain.SensorThresholds{
+		LowerNonRecoverable: fptr(0.8724), LowerCritical: fptr(0.892), LowerNonCritical: fptr(0.9214),
+		UpperNonCritical: fptr(1.0782), UpperCritical: fptr(1.1076), UpperNonRecoverable: fptr(1.1272),
+	}
+	// Upper-only temperature thresholds.
+	upperOnly := domain.SensorThresholds{
+		UpperNonCritical: fptr(95), UpperCritical: fptr(100), UpperNonRecoverable: fptr(105),
+	}
+
+	// value within thresholds + alarm false → PASS
+	if got := GradeSensor(domain.Sensor{Name: "V", Type: "voltage", Value: fptr(0.99), Alarm: bptr(false), Thresholds: full}).Severity; got != Pass {
+		t.Errorf("in-range voltage = %s, want PASS", got)
+	}
+	// value >= upper_non_critical → WARN
+	if got := GradeSensor(domain.Sensor{Name: "V", Type: "voltage", Value: fptr(1.08), Alarm: bptr(false), Thresholds: full}).Severity; got != Warn {
+		t.Errorf("upper-non-critical voltage = %s, want WARN", got)
+	}
+	// value >= upper_critical → CRITICAL
+	if got := GradeSensor(domain.Sensor{Name: "V", Type: "voltage", Value: fptr(1.11), Alarm: bptr(false), Thresholds: full}).Severity; got != Critical {
+		t.Errorf("upper-critical voltage = %s, want CRITICAL", got)
+	}
+	// value <= lower_critical → CRITICAL
+	if got := GradeSensor(domain.Sensor{Name: "V", Type: "voltage", Value: fptr(0.80), Alarm: bptr(false), Thresholds: full}).Severity; got != Critical {
+		t.Errorf("lower-critical voltage = %s, want CRITICAL", got)
+	}
+	// alarm true always wins → CRITICAL (even with in-range value)
+	if got := GradeSensor(domain.Sensor{Name: "PS2", Type: "power", Value: fptr(0), Alarm: bptr(true), Thresholds: full}).Severity; got != Critical {
+		t.Errorf("alarm-asserted sensor = %s, want CRITICAL", got)
+	}
+	// empty thresholds + alarm false → PASS (device itself asserts no alarm)
+	if got := GradeSensor(domain.Sensor{Name: "T", Type: "temperature", Value: fptr(42), Alarm: bptr(false)}).Severity; got != Pass {
+		t.Errorf("empty-thresholds alarm:false = %s, want PASS (device basis)", got)
+	}
+	// no alarm field AND empty thresholds → N/A (hard rule: no invented basis)
+	if got := GradeSensor(domain.Sensor{Name: "T", Type: "temperature", Value: fptr(42)}).Severity; got != NA {
+		t.Errorf("no basis at all = %s, want N/A", got)
+	}
+	// one-sided PASS notes the missing bound honestly
+	f := GradeSensor(domain.Sensor{Name: "T", Type: "temperature", Value: fptr(40), Alarm: bptr(false), Thresholds: upperOnly})
+	if f.Severity != Pass {
+		t.Fatalf("upper-only in-range = %s, want PASS", f.Severity)
+	}
+	if !strings.Contains(f.Message, "(upper only)") {
+		t.Errorf("one-sided PASS should flag the missing bound, got %q", f.Message)
+	}
+	// upper-only bound still trips on the bounded side
+	if got := GradeSensor(domain.Sensor{Name: "T", Type: "temperature", Value: fptr(101), Alarm: bptr(false), Thresholds: upperOnly}).Severity; got != Critical {
+		t.Errorf("upper-only over-temp = %s, want CRITICAL", got)
+	}
+}
+
+// TestSensorZeroThresholdPlaceholder guards the power-status false-positive: a
+// power sensor reporting value 0 with all-zero thresholds and alarm:false must NOT
+// grade `0 >= upper_critical 0` CRITICAL — a zero bound is a FortiOS placeholder,
+// so it falls through to the alarm basis → PASS. A genuine non-zero breach must
+// still grade CRITICAL, proving grading was not neutered.
+func TestSensorZeroThresholdPlaceholder(t *testing.T) {
+	zeros := domain.SensorThresholds{
+		UpperNonCritical: fptr(0), UpperCritical: fptr(0), UpperNonRecoverable: fptr(0),
+	}
+	ps := GradeSensor(domain.Sensor{Name: "PS1 Status", Type: "power", Value: fptr(0), Alarm: bptr(false), Thresholds: zeros})
+	if ps.Severity != Pass {
+		t.Errorf("zero-threshold power sensor = %s, want PASS (zero bound is a placeholder)", ps.Severity)
+	}
+	if !strings.Contains(ps.Message, "no alarm asserted") {
+		t.Errorf("zero-threshold PASS should rest on the alarm basis, got %q", ps.Message)
+	}
+	// A real non-zero upper_critical genuinely exceeded still grades CRITICAL.
+	real := domain.SensorThresholds{UpperNonCritical: fptr(95), UpperCritical: fptr(100), UpperNonRecoverable: fptr(105)}
+	if got := GradeSensor(domain.Sensor{Name: "CPU", Type: "temperature", Value: fptr(102), Alarm: bptr(false), Thresholds: real}).Severity; got != Critical {
+		t.Errorf("real over-temp = %s, want CRITICAL (grading must not be neutered)", got)
+	}
+}
+
 // TestSensorNoInventedThreshold: a bare numeric value with no status/alarm must
 // stay N/A even though it looks extreme.
 func TestSensorNoInventedThreshold(t *testing.T) {

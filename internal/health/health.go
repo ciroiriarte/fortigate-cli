@@ -160,20 +160,54 @@ func gradeReading(subject, name, unit string, r domain.DDMReading) (Finding, boo
 	}, true
 }
 
-// GradeSensor grades one hardware sensor from its device-supplied alarm flag or
-// status text. With neither, the reading is reported N/A.
+// GradeSensor grades one hardware sensor against DEVICE-SUPPLIED bases only: the
+// nested thresholds and the alarm flag from monitor/system/sensor-info (with a
+// flat status text as a tolerant fallback for odd builds). It never invents a
+// numeric limit. Precedence:
+//   - CRITICAL: alarm asserted, or value at/beyond a critical or non-recoverable bound.
+//   - WARN: value at/beyond a non-critical (warning) bound.
+//   - PASS: a device basis exists (any threshold, an explicit alarm:false, or an OK
+//     status text) and nothing tripped. One-sided thresholds are graded honestly —
+//     only the bounded side is judged and the message notes "(upper only)"/"(lower only)".
+//   - N/A: no basis at all (empty thresholds AND no alarm/status).
 func GradeSensor(s domain.Sensor) Finding {
 	sev := NA
-	reason := "no device-supplied status to grade against"
+	reason := "no device-supplied threshold or alarm to grade against"
+	// A bound of exactly 0 is a FortiOS placeholder, not a real limit (real
+	// temperature/voltage/fan sensors carry non-zero limits). Treat it as unset so
+	// e.g. a power-status sensor reporting value 0 with all-zero thresholds does not
+	// grade `0 >= upper_critical 0` CRITICAL; it falls through to its alarm basis.
+	// This normalization applies uniformly to the comparisons AND to whether any
+	// threshold counts as a present PASS basis (th.Any/HasUpper/HasLower below).
+	th := nonZeroThresholds(s.Thresholds)
+	haveVal := s.Value != nil
+	var val float64
+	if haveVal {
+		val = *s.Value
+	}
 	switch {
 	case s.Alarm != nil && *s.Alarm:
 		sev, reason = Critical, "alarm asserted"
+	case haveVal && th.UpperCritical != nil && val >= *th.UpperCritical:
+		sev, reason = Critical, fmt.Sprintf("at/above critical limit %s", num(*th.UpperCritical))
+	case haveVal && th.UpperNonRecoverable != nil && val >= *th.UpperNonRecoverable:
+		sev, reason = Critical, fmt.Sprintf("at/above non-recoverable limit %s", num(*th.UpperNonRecoverable))
+	case haveVal && th.LowerCritical != nil && val <= *th.LowerCritical:
+		sev, reason = Critical, fmt.Sprintf("at/below critical limit %s", num(*th.LowerCritical))
+	case haveVal && th.LowerNonRecoverable != nil && val <= *th.LowerNonRecoverable:
+		sev, reason = Critical, fmt.Sprintf("at/below non-recoverable limit %s", num(*th.LowerNonRecoverable))
 	case s.Status != "" && statusIsCritical(s.Status):
 		sev, reason = Critical, "status "+s.Status
+	case haveVal && th.UpperNonCritical != nil && val >= *th.UpperNonCritical:
+		sev, reason = Warn, fmt.Sprintf("at/above warning limit %s", num(*th.UpperNonCritical))
+	case haveVal && th.LowerNonCritical != nil && val <= *th.LowerNonCritical:
+		sev, reason = Warn, fmt.Sprintf("at/below warning limit %s", num(*th.LowerNonCritical))
 	case s.Status != "" && statusIsWarn(s.Status):
 		sev, reason = Warn, "status "+s.Status
 	case s.Status != "" && statusIsOK(s.Status):
 		sev, reason = Pass, "status "+s.Status
+	case th.Any():
+		sev, reason = Pass, "within device-supplied limits"+sensorBoundNote(th)
 	case s.Alarm != nil && !*s.Alarm:
 		sev, reason = Pass, "no alarm asserted"
 	}
@@ -186,6 +220,40 @@ func GradeSensor(s domain.Sensor) Finding {
 		Code:     "sensor." + sensorCode(s.Type),
 		Subject:  s.Name,
 		Message:  msg,
+	}
+}
+
+// nonZeroThresholds returns a copy of th with any bound of exactly 0 dropped to
+// nil, so a FortiOS zero placeholder is never treated as a real limit or a grading
+// basis.
+func nonZeroThresholds(th domain.SensorThresholds) domain.SensorThresholds {
+	nz := func(p *float64) *float64 {
+		if p == nil || *p == 0 {
+			return nil
+		}
+		return p
+	}
+	return domain.SensorThresholds{
+		LowerNonRecoverable: nz(th.LowerNonRecoverable),
+		LowerCritical:       nz(th.LowerCritical),
+		LowerNonCritical:    nz(th.LowerNonCritical),
+		UpperNonCritical:    nz(th.UpperNonCritical),
+		UpperCritical:       nz(th.UpperCritical),
+		UpperNonRecoverable: nz(th.UpperNonRecoverable),
+	}
+}
+
+// sensorBoundNote flags a one-sided sensor PASS, mirroring boundNote for optics:
+// a value passed against limits that bound only one direction is reported so a
+// value out of range on the UNBOUNDED side is not silently read as healthy.
+func sensorBoundNote(th domain.SensorThresholds) string {
+	switch {
+	case th.HasUpper() && !th.HasLower():
+		return " (upper only)"
+	case th.HasLower() && !th.HasUpper():
+		return " (lower only)"
+	default:
+		return ""
 	}
 }
 

@@ -87,8 +87,10 @@ func sensorListCmd(a *app) *cobra.Command {
 		Use:   "list",
 		Short: "List hardware sensor readings (name, type, value, status)",
 		Long: "List hardware sensors from monitor/system/sensor-info.\n\n" +
-			"STATUS reflects the device's own status/alarm; json/yaml output shows the\n" +
-			"device's original records verbatim (the endpoint schema is unverified).",
+			"STATUS is the health grade (PASS/WARN/CRITICAL/N/A) derived from the device's\n" +
+			"own alarm flag and thresholds — never an invented limit; a sensor with no\n" +
+			"threshold or alarm is N/A. json/yaml output shows the device's original\n" +
+			"records verbatim.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			p, err := a.Provider()
@@ -372,18 +374,11 @@ func sensorValue(s domain.Sensor) string {
 	return v
 }
 
-// sensorStatus prefers the device's status text, falling back to the alarm flag.
+// sensorStatus renders the health grade (PASS/WARN/CRITICAL/N/A) from the same
+// device-supplied thresholds and alarm flag the health roll-up uses, so the table
+// STATUS reflects the grade rather than an unverified status text.
 func sensorStatus(s domain.Sensor) string {
-	if s.Status != "" {
-		return s.Status
-	}
-	if s.Alarm != nil {
-		if *s.Alarm {
-			return "ALARM"
-		}
-		return "ok"
-	}
-	return ""
+	return string(health.GradeSensor(s).Severity)
 }
 
 func emptyDash(s string) string {
