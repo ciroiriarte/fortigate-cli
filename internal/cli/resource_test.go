@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ciroiriarte/fortigate-cli/internal/protocol"
+	"github.com/ciroiriarte/fortigate-cli/internal/provider"
 )
 
 func TestSetUpsertFallback(t *testing.T) {
@@ -82,6 +83,42 @@ func TestRangeListEncoding(t *testing.T) {
 	want := []map[string]string{{"range": "10.0.0.5"}, {"range": "10.0.0.6"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("kindRangeList = %v, want %v", got, want)
+	}
+}
+
+func TestRedactObject(t *testing.T) {
+	r := resource{redact: []string{"private-key", "password"}}
+	o := provider.Object{
+		"name":        "web",
+		"private-key": "-----BEGIN PRIVATE KEY-----\nAAAA...",
+		"password":    "", // already empty -> not marked
+		"comments":    "keep me",
+	}
+	r.redactObject(o)
+	if o["private-key"] != "<redacted>" {
+		t.Errorf("populated private-key must be redacted, got %v", o["private-key"])
+	}
+	if o["password"] != "" {
+		t.Errorf("empty secret must stay empty (not a misleading marker), got %v", o["password"])
+	}
+	if o["comments"] != "keep me" || o["name"] != "web" {
+		t.Error("non-secret fields must be untouched")
+	}
+}
+
+func TestCertificatesReadOnly(t *testing.T) {
+	cmd := newVpnCertificateCmd(&app{})
+	local := findCmd(cmd, "local")
+	if local == nil {
+		t.Fatal("expected vpn certificate local")
+	}
+	if findCmd(local, "list") == nil || findCmd(local, "show") == nil {
+		t.Error("read-only resource must have list + show")
+	}
+	for _, w := range []string{"create", "set", "delete"} {
+		if findCmd(local, w) != nil {
+			t.Errorf("read-only certificate resource must not expose %q", w)
+		}
 	}
 }
 

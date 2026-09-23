@@ -62,7 +62,7 @@ func newVpnCmd(a *app) *cobra.Command {
 	ssl := newVpnSSLCmd(a)
 	ssl.AddCommand(sslSessionsCmd(a))
 
-	cmd.AddCommand(ipsec, ssl)
+	cmd.AddCommand(ipsec, ssl, newVpnCertificateCmd(a))
 	return cmd
 }
 

@@ -2,20 +2,44 @@
 .TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
 
 .SH NAME
-fgt-vpn - Manage VPN configuration (cmdb surface)
+fgt-vpn-certificate-setting-set - Update fields on a setting object
 
 
 .SH SYNOPSIS
-\fBfgt vpn [flags]\fP
+\fBfgt vpn certificate setting set [flags]\fP
 
 
 .SH DESCRIPTION
-Manage VPN configuration (cmdb surface)
+Update fields on a setting object
 
 
 .SH OPTIONS
+\fB--cert-expire-warning\fP=""
+	days before expiry to warn
+
+.PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for vpn
+	help for set
+
+.PP
+\fB--ocsp-default-server\fP=""
+	default OCSP server ref
+
+.PP
+\fB--ocsp-status\fP=""
+	enable|disable
+
+.PP
+\fB--set\fP=[]
+	set an arbitrary field: --set key=value (repeatable; value may be a,b for ref lists)
+
+.PP
+\fB--ssl-min-proto-version\fP=""
+	default|SSLv3|TLSv1|TLSv1-1|TLSv1-2
+
+.PP
+\fB--strict-crl-check\fP=""
+	enable|disable
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -88,4 +112,4 @@ Manage VPN configuration (cmdb surface)
 
 
 .SH SEE ALSO
-\fBfgt(1)\fP, \fBfgt-vpn-certificate(1)\fP, \fBfgt-vpn-ipsec(1)\fP, \fBfgt-vpn-ssl(1)\fP
+\fBfgt-vpn-certificate-setting(1)\fP

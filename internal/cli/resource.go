@@ -19,16 +19,18 @@ import (
 // field not modeled as a typed flag is still reachable via `--set field=value`,
 // and any object at all is reachable via `fgt api`.
 type resource struct {
-	use     string   // command name, e.g. "address"
-	short   string   // one-line help
-	aliases []string // command aliases, e.g. {"addr"}
-	path    string   // cmdb path, e.g. "firewall/address" or "firewall.service/custom"
-	mkey    string   // mkey field name, e.g. "name" or "policyid"
-	mkeyArg string   // arg label in help, e.g. "name" (defaults to mkey)
-	numeric bool     // mkey is numeric (policyid/seq-num) and may be auto-assigned
-	single  bool     // singleton object (no mkey): only show/set
-	columns []column // list/show table columns
-	fields  []fieldSpec
+	use      string   // command name, e.g. "address"
+	short    string   // one-line help
+	aliases  []string // command aliases, e.g. {"addr"}
+	path     string   // cmdb path, e.g. "firewall/address" or "firewall.service/custom"
+	mkey     string   // mkey field name, e.g. "name" or "policyid"
+	mkeyArg  string   // arg label in help, e.g. "name" (defaults to mkey)
+	numeric  bool     // mkey is numeric (policyid/seq-num) and may be auto-assigned
+	single   bool     // singleton object (no mkey): only show/set
+	readOnly bool     // expose only list/show (e.g. certificates: writes need special import handling)
+	redact   []string // field names to blank before rendering (secrets: private-key, password, ...)
+	columns  []column // list/show table columns
+	fields   []fieldSpec
 }
 
 type column struct {
@@ -59,6 +61,30 @@ func (f fieldSpec) flagName() string {
 	return f.name
 }
 
+// redactObject blanks any r.redact fields present on o (in place), so secret
+// material (private keys, passwords) never reaches the table OR the json/yaml
+// Raw output. o is the same map used for both, so one pass covers every format.
+func (r resource) redactObject(o provider.Object) {
+	for _, k := range r.redact {
+		if v, ok := o[k]; ok && !isEmptyValue(v) {
+			o[k] = "<redacted>"
+		}
+	}
+}
+
+// isEmptyValue reports whether a decoded JSON value is empty/absent, so we don't
+// replace an already-empty secret field with a misleading "<redacted>" marker.
+func isEmptyValue(v any) bool {
+	switch t := v.(type) {
+	case nil:
+		return true
+	case string:
+		return t == ""
+	default:
+		return false
+	}
+}
+
 func (r resource) mkeyLabel() string {
 	if r.mkeyArg != "" {
 		return r.mkeyArg
@@ -69,9 +95,12 @@ func (r resource) mkeyLabel() string {
 // newResourceCmd builds the full command tree for a resource.
 func (a *app) newResourceCmd(r resource) *cobra.Command {
 	root := &cobra.Command{Use: r.use, Short: r.short, Aliases: r.aliases}
-	if r.single {
+	switch {
+	case r.readOnly:
+		root.AddCommand(a.resList(r), a.resShow(r))
+	case r.single:
 		root.AddCommand(a.resShow(r), a.resSet(r))
-	} else {
+	default:
 		root.AddCommand(a.resList(r), a.resShow(r), a.resCreate(r), a.resSet(r), a.resDelete(r))
 	}
 	return root
@@ -90,6 +119,9 @@ func (a *app) resList(r resource) *cobra.Command {
 			objs, err := p.CmdbList(cmd.Context(), r.path)
 			if err != nil {
 				return err
+			}
+			for _, o := range objs {
+				r.redactObject(o)
 			}
 			t := output.Tabular{Columns: r.headers(), Raw: objs}
 			for _, o := range objs {
@@ -124,6 +156,7 @@ func (a *app) resShow(r resource) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			r.redactObject(obj)
 			return a.render(keyValueTable(obj))
 		},
 	}

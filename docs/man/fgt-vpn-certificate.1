@@ -2,20 +2,23 @@
 .TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
 
 .SH NAME
-fgt-vpn - Manage VPN configuration (cmdb surface)
+fgt-vpn-certificate - Inspect the installed certificate store (read-only)
 
 
 .SH SYNOPSIS
-\fBfgt vpn [flags]\fP
+\fBfgt vpn certificate [flags]\fP
 
 
 .SH DESCRIPTION
-Manage VPN configuration (cmdb surface)
+List and show installed certificates (local device certs/CSRs, CA,
+remote, CRL) and the certificate settings. Secret fields (private keys,
+passwords) are redacted. Import is a privileged monitor upload — use the
+FortiOS GUI/CLI or \fBfgt api POST monitor/vpn-certificate/local/import\fR\&.
 
 
 .SH OPTIONS
 \fB-h\fP, \fB--help\fP[=false]
-	help for vpn
+	help for certificate
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -88,4 +91,4 @@ Manage VPN configuration (cmdb surface)
 
 
 .SH SEE ALSO
-\fBfgt(1)\fP, \fBfgt-vpn-certificate(1)\fP, \fBfgt-vpn-ipsec(1)\fP, \fBfgt-vpn-ssl(1)\fP
+\fBfgt-vpn(1)\fP, \fBfgt-vpn-certificate-ca(1)\fP, \fBfgt-vpn-certificate-crl(1)\fP, \fBfgt-vpn-certificate-local(1)\fP, \fBfgt-vpn-certificate-remote(1)\fP, \fBfgt-vpn-certificate-setting(1)\fP
