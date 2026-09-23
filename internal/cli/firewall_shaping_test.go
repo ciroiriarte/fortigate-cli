@@ -23,6 +23,14 @@ type testProvider struct {
 
 	updateErr    error // returned by CmdbUpdate (nil = success)
 	createCalled bool
+
+	lastCertImport *provider.CertImport
+}
+
+func (tp *testProvider) ImportCertificate(_ context.Context, req provider.CertImport) error {
+	r := req
+	tp.lastCertImport = &r
+	return nil
 }
 
 func (tp *testProvider) CmdbCreate(_ context.Context, path string, obj provider.Object) (string, error) {

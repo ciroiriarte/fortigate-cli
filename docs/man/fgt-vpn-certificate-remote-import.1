@@ -2,20 +2,28 @@
 .TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
 
 .SH NAME
-fgt-vpn-certificate-local - Local device certificates and CSRs
+fgt-vpn-certificate-remote-import - Import a remote (OCSP) certificate (PEM) — privileged upload
 
 
 .SH SYNOPSIS
-\fBfgt vpn certificate local [flags]\fP
+\fBfgt vpn certificate remote import [flags]\fP
 
 
 .SH DESCRIPTION
-Local device certificates and CSRs
+Import a remote (OCSP) certificate (PEM) — privileged upload
 
 
 .SH OPTIONS
+\fB--cert\fP=""
+	PEM certificate file (or - for stdin)
+
+.PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for local
+	help for import
+
+.PP
+\fB--scope\fP="global"
+	import scope: vdom|global
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -88,4 +96,4 @@ Local device certificates and CSRs
 
 
 .SH SEE ALSO
-\fBfgt-vpn-certificate(1)\fP, \fBfgt-vpn-certificate-local-import(1)\fP, \fBfgt-vpn-certificate-local-list(1)\fP, \fBfgt-vpn-certificate-local-show(1)\fP
+\fBfgt-vpn-certificate-remote(1)\fP

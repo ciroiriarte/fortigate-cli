@@ -24,6 +24,17 @@ var ErrUnsupported = errors.New("operation not supported by this provider")
 // on any FortiOS version round-trips without a per-object Go struct).
 type Object = map[string]any
 
+// CertImport describes a certificate upload to a vpn-certificate store.
+type CertImport struct {
+	Store    string // "local" | "ca" | "remote" | "crl"
+	Type     string // "regular" (PEM cert+key) | "pkcs12" — local only
+	Name     string // certname — local only
+	Scope    string // "vdom" | "global"
+	Cert     []byte // the PEM certificate, or PKCS12 bytes
+	Key      []byte // the PEM private key (local regular)
+	Password string // PKCS12 / encrypted-key passphrase
+}
+
 // Provider is the backend contract consumed by the CLI.
 type Provider interface {
 	Name() string
@@ -60,6 +71,10 @@ type Provider interface {
 	// ConfigRestore uploads a configuration to the device. This REPLACES the
 	// running config and typically reboots the unit. scope/vdom as above.
 	ConfigRestore(ctx context.Context, scope, vdom string, config []byte) error
+	// ImportCertificate uploads a certificate to the vpn-certificate store via the
+	// monitor import endpoint. This is a privileged, mutating upload of key
+	// material (POST monitor/vpn-certificate/<store>/import).
+	ImportCertificate(ctx context.Context, req CertImport) error
 	// Schema returns a cmdb object's field schema for the target build
 	// (GET cmdb/<path>?action=schema) — the authoritative, per-version field set
 	// FortiOS describes about itself. Backs `fgt schema`.

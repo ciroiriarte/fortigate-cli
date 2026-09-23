@@ -233,6 +233,46 @@ func (f *fortiGate) ConfigRestore(ctx context.Context, scope, vdom string, confi
 	return err
 }
 
+// ImportCertificate POSTs a certificate to monitor/vpn-certificate/<store>/import
+// with base64-encoded content. Key material never appears in a URL/query, and
+// the transport's --debug logs only method+URL, so it is not logged.
+func (f *fortiGate) ImportCertificate(ctx context.Context, req provider.CertImport) error {
+	body := map[string]any{}
+	if req.Scope != "" {
+		body["scope"] = req.Scope
+	}
+	if len(req.Cert) > 0 {
+		body["file_content"] = base64.StdEncoding.EncodeToString(req.Cert)
+	}
+	switch req.Store {
+	case "local":
+		if req.Type != "" {
+			body["type"] = req.Type
+		}
+		if req.Name != "" {
+			body["certname"] = req.Name
+		}
+		if len(req.Key) > 0 {
+			body["key_file_content"] = base64.StdEncoding.EncodeToString(req.Key)
+		}
+		if req.Password != "" {
+			body["password"] = req.Password
+		}
+	case "ca":
+		body["import_method"] = "file"
+	}
+	b, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	_, err = f.cl.DoRaw(ctx, &transport.Request{
+		Method: "POST",
+		Path:   "monitor/vpn-certificate/" + req.Store + "/import",
+		Body:   b,
+	})
+	return err
+}
+
 // Schema returns a cmdb object's field schema (GET cmdb/<path>?action=schema).
 // FortiOS self-describes each object per build, so this is more authoritative
 // than any static doc.

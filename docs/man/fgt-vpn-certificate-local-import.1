@@ -2,20 +2,46 @@
 .TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
 
 .SH NAME
-fgt-vpn-certificate-local - Local device certificates and CSRs
+fgt-vpn-certificate-local-import - Import a local certificate (PEM cert+key or PKCS12) — privileged upload
 
 
 .SH SYNOPSIS
-\fBfgt vpn certificate local [flags]\fP
+\fBfgt vpn certificate local import  [flags]\fP
 
 
 .SH DESCRIPTION
-Local device certificates and CSRs
+Import a device certificate. Provide either --cert (PEM, or - for stdin)
+plus --key (PEM), or --pkcs12 (a .p12/.pfx bundle) with its passphrase via
+--password-file/--password-env. Secrets are never passed as flag values.
 
 
 .SH OPTIONS
+\fB--cert\fP=""
+	PEM certificate file (or - for stdin)
+
+.PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for local
+	help for import
+
+.PP
+\fB--key\fP=""
+	PEM private-key file
+
+.PP
+\fB--password-env\fP=""
+	env var holding the PKCS12/key passphrase
+
+.PP
+\fB--password-file\fP=""
+	file holding the PKCS12/key passphrase
+
+.PP
+\fB--pkcs12\fP=""
+	PKCS12/PFX bundle file
+
+.PP
+\fB--scope\fP="vdom"
+	import scope: vdom|global
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -88,4 +114,4 @@ Local device certificates and CSRs
 
 
 .SH SEE ALSO
-\fBfgt-vpn-certificate(1)\fP, \fBfgt-vpn-certificate-local-import(1)\fP, \fBfgt-vpn-certificate-local-list(1)\fP, \fBfgt-vpn-certificate-local-show(1)\fP
+\fBfgt-vpn-certificate-local(1)\fP

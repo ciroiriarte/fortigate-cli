@@ -2,6 +2,7 @@ package fortigate
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -206,6 +207,50 @@ func TestSSLSessions(t *testing.T) {
 	}
 	if len(sess) != 1 || sess[0]["user_name"] != "ciro" {
 		t.Errorf("ssl sessions passthrough = %v", sess)
+	}
+}
+
+func TestImportCertificate(t *testing.T) {
+	// local regular: type/certname + base64 cert + base64 key at the local path.
+	var got capture
+	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		got.method, got.path = r.Method, r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		json.Unmarshal(b, &got.body)
+		w.Write(envelope(map[string]any{"status": "success"}))
+	})
+	err := p.ImportCertificate(context.Background(), provider.CertImport{
+		Store: "local", Type: "regular", Name: "web", Scope: "vdom",
+		Cert: []byte("CERTPEM"), Key: []byte("KEYPEM"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.method != "POST" || got.path != "/api/v2/monitor/vpn-certificate/local/import" {
+		t.Errorf("local import hit %s %s", got.method, got.path)
+	}
+	if got.body["type"] != "regular" || got.body["certname"] != "web" || got.body["scope"] != "vdom" {
+		t.Errorf("local import body = %v", got.body)
+	}
+	if got.body["file_content"] != base64.StdEncoding.EncodeToString([]byte("CERTPEM")) {
+		t.Errorf("cert not base64-encoded: %v", got.body["file_content"])
+	}
+	if got.body["key_file_content"] != base64.StdEncoding.EncodeToString([]byte("KEYPEM")) {
+		t.Errorf("key not base64-encoded: %v", got.body["key_file_content"])
+	}
+
+	// CA import: import_method=file + base64 content at the ca path.
+	p2 := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		got.path = r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		json.Unmarshal(b, &got.body)
+		w.Write(envelope(map[string]any{"status": "success"}))
+	})
+	if err := p2.ImportCertificate(context.Background(), provider.CertImport{Store: "ca", Scope: "global", Cert: []byte("CA")}); err != nil {
+		t.Fatal(err)
+	}
+	if got.path != "/api/v2/monitor/vpn-certificate/ca/import" || got.body["import_method"] != "file" {
+		t.Errorf("ca import path/body = %s %v", got.path, got.body)
 	}
 }
 

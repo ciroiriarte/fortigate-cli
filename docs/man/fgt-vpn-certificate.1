@@ -2,7 +2,7 @@
 .TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
 
 .SH NAME
-fgt-vpn-certificate - Inspect the installed certificate store (read-only)
+fgt-vpn-certificate - Manage the certificate store (read + import)
 
 
 .SH SYNOPSIS
@@ -10,10 +10,9 @@ fgt-vpn-certificate - Inspect the installed certificate store (read-only)
 
 
 .SH DESCRIPTION
-List and show installed certificates (local device certs/CSRs, CA,
-remote, CRL) and the certificate settings. Secret fields (private keys,
-passwords) are redacted. Import is a privileged monitor upload — use the
-FortiOS GUI/CLI or \fBfgt api POST monitor/vpn-certificate/local/import\fR\&.
+List/show installed certificates (local device certs/CSRs, CA, remote,
+CRL) and settings — secret fields (private keys, passwords) are redacted —
+and import certificates via the privileged monitor upload endpoint.
 
 
 .SH OPTIONS
