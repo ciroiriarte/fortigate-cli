@@ -163,6 +163,30 @@ func TestCmdbUpdateSingleton(t *testing.T) {
 	}
 }
 
+func TestHAStatus(t *testing.T) {
+	var got capture
+	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		got.method, got.path = r.Method, r.URL.Path
+		w.Write(envelope([]map[string]any{
+			{"serial_no": "FGT001", "hostname": "primary", "priority": 200, "cpu_usage": 5, "mem_usage": 40, "sessions": 1200},
+			{"serial_no": "FGT002", "hostname": "secondary", "priority": 100},
+		}))
+	})
+	members, err := p.HAStatus(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.method != "GET" || got.path != "/api/v2/monitor/system/ha-statistics" {
+		t.Errorf("ha-status hit %s %s", got.method, got.path)
+	}
+	if len(members) != 2 || members[0].Serial != "FGT001" || members[0].Priority != 200 {
+		t.Fatalf("ha members = %v", members)
+	}
+	if members[0].Sessions != 1200 || members[1].Hostname != "secondary" {
+		t.Errorf("ha member fields = %v", members)
+	}
+}
+
 func TestCmdbErrorDecodes(t *testing.T) {
 	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)

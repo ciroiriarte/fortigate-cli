@@ -32,6 +32,8 @@ type Provider interface {
 	ListInterfaces(ctx context.Context) ([]domain.Interface, error)
 	// ListManagedSwitches returns FortiLink-managed FortiSwitch units.
 	ListManagedSwitches(ctx context.Context) ([]domain.ManagedSwitch, error)
+	// HAStatus returns the HA cluster members (monitor surface).
+	HAStatus(ctx context.Context) ([]domain.HAMember, error)
 
 	// Generic cmdb CRUD. path is the cmdb-relative object path, e.g.
 	// "firewall/address" or "firewall.service/custom". These back the curated

@@ -145,6 +145,16 @@ func (f *fortiGate) ListManagedSwitches(ctx context.Context) ([]domain.ManagedSw
 	return out, nil
 }
 
+// HAStatus reports HA cluster members from the monitor surface. On a standalone
+// unit FortiOS returns a single-member list.
+func (f *fortiGate) HAStatus(ctx context.Context) ([]domain.HAMember, error) {
+	var out []domain.HAMember
+	if err := f.cl.Do(ctx, &transport.Request{Method: "GET", Path: "monitor/system/ha-statistics"}, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Raw backs `fgt api` / `fgt raw`.
 func (f *fortiGate) Raw(ctx context.Context, method, path string, params url.Values, body []byte) ([]byte, error) {
 	return f.cl.DoRaw(ctx, &transport.Request{
