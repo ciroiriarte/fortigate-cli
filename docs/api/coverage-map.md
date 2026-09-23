@@ -12,10 +12,10 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 | Namespace | Objects | Status | Notes |
 |---|---:|---|---|
 | `firewall` | 92 | partial | address/addrgrp/service×2/policy ✅; vip/ippool 🎫#3; central-snat/shaper/DoS/proxy-policy/schedule ⭕ |
-| `system` | 181 | partial | admin/dns ✅; interface-write 🎫#1, vdom 🎫#23, ha 🎫#25, npu 🎫#24; sdwan/dhcp/snmp/ntp/zone/central-mgmt/api-user/automation ⭕ |
-| `router` | 29 | partial | static/policy ✅; bgp 🎫#21, ospf+tools 🎫#22; rip/isis/multicast/bfd ⭕ |
+| `system` | 181 | partial | admin/dns/interface/vdom/ha ✅ (ha adds `status` from monitor); npu 🎫#24; sdwan/dhcp/snmp/ntp/zone/central-mgmt/api-user/automation ⭕ |
+| `router` | 29 | partial | static/policy/bgp/ospf/route-map/prefix-list/access-list ✅ (bgp/ospf singletons; child-tables via `--set`); rip/isis/multicast/bfd ⭕ |
 | `user` | 26 | ⭕ | **identity & auth** — local/radius/ldap/tacacs+/group/saml/fsso/setting. None curated |
-| `vpn` | 24 | partial | ipsec phase1/2 🎫#2; **ssl-vpn** (vpn.ssl settings/portal) ⭕; certificate/l2tp/pptp ⭕ |
+| `vpn` | 24 | partial | ipsec phase1-interface/phase2-interface ✅; **ssl-vpn** (vpn.ssl settings/portal) ⭕; certificate/l2tp/pptp ⭕ |
 | `log` | 61 | ⭕ | **logging config** — fortianalyzer/syslogd/disk/memory settings, filters. Whole namespace uncurated |
 | `switch-controller` | 52 | partial | managed-switch/ports/lldp 🎫#5–7; vlan/qos/security/stp/dynamic-port-policy ⭕ |
 | `wireless-controller` | 43 | ⭕ | FortiAP — vap/wtp/wtp-profile. Only if integrated WiFi (Tier 3) |

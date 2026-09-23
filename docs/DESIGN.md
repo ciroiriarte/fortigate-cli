@@ -50,17 +50,24 @@ block on hand-writing hundreds of cmdb tables.
 
 - **M1** ✅ — transport/auth/config/output/protocol, `api` escape hatch, monitor
   reads (`system interface`, `switch`).
-- **M2** 🚧 — curated CRUD via a **declarative resource framework**
+- **M2** ✅ — curated CRUD via a **declarative resource framework**
   (`internal/cli/resource.go`): generic cmdb `List/Get/Create/Update/Delete` on
   the provider, and each object is a data declaration (path, mkey, columns,
-  fields). Done: `firewall address`/`addrgrp`/`service custom`/`service group`/
-  `policy`, `router static`, `system admin`/`dns` (singleton). `--set key=value`
-  reaches any un-modeled field; ref child-tables (`srcaddr`, `member`, …) take
-  comma lists. Remaining: `system interface` write, `vpn ipsec`, richer columns,
-  **dynamic routing** (`router/bgp`, `router/ospf`, `route-map`, `prefix-list`),
-  **VDOM administration** (`system/vdom` CRUD, inter-VDOM links) — distinct from
-  VDOM *scoping* (`--vdom`), which shipped in M1 — and **HA clustering**
-  (`system/ha` config + `monitor/system/ha-*` cluster/sync status).
+  fields). `--set key=value` reaches any un-modeled field; ref child-tables
+  (`srcaddr`, `member`, …) take comma lists. Shipped:
+  - `firewall address`/`addrgrp`/`service custom`/`service group`/`policy`.
+  - `router static`, and **dynamic routing** `router bgp`/`ospf` (singletons;
+    neighbor/area/network child-tables via `--set`) plus `route-map`/
+    `prefix-list`/`access-list` (thin wrappers — `rule` child-tables via `--set`
+    until M5 codegen).
+  - `system admin`, `system dns` (singleton), `system interface` (cmdb
+    show/create/set/delete; `list` stays on the monitor surface for live
+    status/IP), **VDOM administration** `system vdom` CRUD, and **HA clustering**
+    `system ha` config (singleton show/set) + `system ha status`
+    (`monitor/system/ha-statistics`). VDOM *scoping* (`--vdom`) shipped in M1.
+  - Deferred to later milestones: inter-VDOM links / `npu-vlink` (see NPU
+    bullet), richer per-object columns, and promoting the child-table-heavy
+    objects (bgp neighbors, route-map rules) into typed sub-commands (M5).
 - **Hardware acceleration** (NPU) — `system/npu`, `npu-vlink` accelerated
   inter-VDOM links, and per-interface/per-policy offload knobs (`auto-asic-offload`).
   Advanced/appliance-focused; reachable via `api` today, curated later.
