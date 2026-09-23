@@ -174,6 +174,7 @@ func NewRootCmd() *cobra.Command {
 		newRouterCmd(a),
 		newSDWANCmd(a),
 		newUserCmd(a),
+		newLogCmd(a),
 		newVpnCmd(a),
 		newSwitchCmd(a),
 		newAPICmd(a),

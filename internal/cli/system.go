@@ -57,6 +57,8 @@ func newSystemCmd(a *app) *cobra.Command {
 		a.newResourceCmd(vdom),
 		newHACmd(a),
 	)
+	// ntp/dhcp/snmp live in system_services.go to keep this file focused.
+	cmd.AddCommand(systemServiceCommands(a)...)
 	return cmd
 }
 
