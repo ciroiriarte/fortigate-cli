@@ -15,7 +15,7 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 | `system` | 181 | partial | admin/dns/interface/vdom/ha ✅ (ha adds `status` from monitor); sdwan ✅ (`fgt sdwan` settings/zone/member/health-check/service over the child-table sub-paths); npu 🎫#24; dhcp/snmp/ntp/zone/central-mgmt/api-user/automation ⭕ |
 | `router` | 29 | partial | static/policy/bgp/ospf/route-map/prefix-list/access-list ✅ (bgp/ospf singletons; child-tables via `--set`); rip/isis/multicast/bfd ⭕ |
 | `user` | 26 | ⭕ | **identity & auth** — local/radius/ldap/tacacs+/group/saml/fsso/setting. None curated |
-| `vpn` | 24 | partial | ipsec phase1-interface/phase2-interface ✅; **ssl-vpn** (vpn.ssl settings/portal) ⭕; certificate/l2tp/pptp ⭕ |
+| `vpn` | 24 | partial | ipsec phase1-interface/phase2-interface ✅; ssl-vpn ✅ (`fgt vpn ssl` settings/authentication-rule/portal + `sessions` from monitor); certificate/l2tp/pptp ⭕ |
 | `log` | 61 | ⭕ | **logging config** — fortianalyzer/syslogd/disk/memory settings, filters. Whole namespace uncurated |
 | `switch-controller` | 52 | partial | managed-switch/ports/lldp 🎫#5–7; vlan/qos/security/stp/dynamic-port-policy ⭕ |
 | `wireless-controller` | 43 | ⭕ | FortiAP — vap/wtp/wtp-profile. Only if integrated WiFi (Tier 3) |
@@ -31,7 +31,7 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 **Tier 1 — core, high-frequency**
 1. **SD-WAN** — ✅ `system/sdwan` curated (`fgt sdwan` settings + zone/member/health-check/service, via the FortiOS child-table REST sub-paths)
 2. **Identity & auth** — `user/{local,radius,ldap,tacacs+,group,saml,fsso,setting}`
-3. **SSL-VPN** — `vpn.ssl/settings`, `vpn.ssl.web/portal`
+3. **SSL-VPN** — ✅ `vpn.ssl/settings` + `authentication-rule` + `vpn.ssl.web/portal` curated (`fgt vpn ssl`, plus `sessions` from monitor/vpn/ssl)
 4. **UTM profiles** — `antivirus/profile`, `webfilter/profile`, `ips/sensor`, `application/list`, `dnsfilter/profile`, `firewall/ssl-ssh-profile`, `firewall/profile-protocol-options`
 5. **NAT & traffic** — ✅ `firewall/central-snat-map`, `firewall/shaper`+`shaping-policy` curated; still ⭕ `firewall/DoS-policy`, `firewall/proxy-policy`
 6. **Logging config** — `log/{fortianalyzer,syslogd,disk,memory} setting`, `log/setting`
