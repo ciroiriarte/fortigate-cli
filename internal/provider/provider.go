@@ -52,6 +52,12 @@ type Provider interface {
 	CmdbUpdate(ctx context.Context, path, mkey string, obj Object) error
 	CmdbDelete(ctx context.Context, path, mkey string) error
 
+	// ConfigBackup returns the device configuration as a text file (monitor
+	// surface). scope is "global" or "vdom"; vdom names the VDOM for vdom scope.
+	ConfigBackup(ctx context.Context, scope, vdom string) ([]byte, error)
+	// ConfigRestore uploads a configuration to the device. This REPLACES the
+	// running config and typically reboots the unit. scope/vdom as above.
+	ConfigRestore(ctx context.Context, scope, vdom string, config []byte) error
 	// Schema returns a cmdb object's field schema for the target build
 	// (GET cmdb/<path>?action=schema) — the authoritative, per-version field set
 	// FortiOS describes about itself. Backs `fgt schema`.

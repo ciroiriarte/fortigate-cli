@@ -5,6 +5,7 @@ package fortigate
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/url"
 	"strings"
@@ -166,6 +167,42 @@ func (f *fortiGate) SSLSessions(ctx context.Context) ([]provider.Object, error) 
 		return nil, err
 	}
 	return out, nil
+}
+
+// ConfigBackup downloads the device configuration (monitor surface). The
+// response body is the config text itself, not a JSON envelope.
+func (f *fortiGate) ConfigBackup(ctx context.Context, scope, vdom string) ([]byte, error) {
+	q := url.Values{}
+	if scope != "" {
+		q.Set("scope", scope)
+	}
+	if vdom != "" {
+		q.Set("vdom", vdom)
+	}
+	return f.cl.DoRaw(ctx, &transport.Request{Method: "GET", Path: "monitor/system/config/backup", Query: q})
+}
+
+// ConfigRestore uploads a configuration to the device (monitor surface). FortiOS
+// expects source=upload plus the base64-encoded file content; this replaces the
+// running config and usually reboots the unit.
+func (f *fortiGate) ConfigRestore(ctx context.Context, scope, vdom string, config []byte) error {
+	if scope == "" {
+		scope = "global"
+	}
+	payload := map[string]any{
+		"source":       "upload",
+		"scope":        scope,
+		"file_content": base64.StdEncoding.EncodeToString(config),
+	}
+	if vdom != "" {
+		payload["vdom"] = vdom
+	}
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	_, err = f.cl.DoRaw(ctx, &transport.Request{Method: "POST", Path: "monitor/system/config/restore", Body: b})
+	return err
 }
 
 // Schema returns a cmdb object's field schema (GET cmdb/<path>?action=schema).

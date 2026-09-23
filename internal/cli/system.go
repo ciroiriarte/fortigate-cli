@@ -59,6 +59,8 @@ func newSystemCmd(a *app) *cobra.Command {
 	)
 	// ntp/dhcp/snmp live in system_services.go to keep this file focused.
 	cmd.AddCommand(systemServiceCommands(a)...)
+	// config backup/restore (system_backup.go).
+	cmd.AddCommand(newBackupCmd(a), newRestoreCmd(a))
 	return cmd
 }
 

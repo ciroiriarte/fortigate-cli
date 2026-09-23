@@ -209,6 +209,51 @@ func TestSSLSessions(t *testing.T) {
 	}
 }
 
+func TestConfigBackup(t *testing.T) {
+	var got capture
+	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		got.method, got.path, got.query = r.Method, r.URL.Path, r.URL.RawQuery
+		w.Write([]byte("#config-version=FG100F\nconfig system global\nend\n"))
+	})
+	cfg, err := p.ConfigBackup(context.Background(), "global", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.method != "GET" || got.path != "/api/v2/monitor/system/config/backup" {
+		t.Errorf("backup hit %s %s", got.method, got.path)
+	}
+	if !strings.Contains(got.query, "scope=global") {
+		t.Errorf("backup query = %q, want scope=global", got.query)
+	}
+	// backup body is the raw config text, not a JSON envelope.
+	if !strings.HasPrefix(string(cfg), "#config-version=") {
+		t.Errorf("backup returned %q", string(cfg)[:20])
+	}
+}
+
+func TestConfigRestore(t *testing.T) {
+	var got capture
+	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		got.method, got.path = r.Method, r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		json.Unmarshal(b, &got.body)
+		w.Write(envelope(map[string]any{"status": "success"}))
+	})
+	if err := p.ConfigRestore(context.Background(), "global", "", []byte("config x\nend\n")); err != nil {
+		t.Fatal(err)
+	}
+	if got.method != "POST" || got.path != "/api/v2/monitor/system/config/restore" {
+		t.Errorf("restore hit %s %s", got.method, got.path)
+	}
+	if got.body["source"] != "upload" || got.body["scope"] != "global" {
+		t.Errorf("restore body = %v", got.body)
+	}
+	// config is sent base64-encoded.
+	if fc, _ := got.body["file_content"].(string); fc == "" {
+		t.Errorf("restore missing base64 file_content: %v", got.body)
+	}
+}
+
 func TestSchema(t *testing.T) {
 	var got capture
 	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
