@@ -36,6 +36,9 @@ type Provider interface {
 	// shape is left untyped so it renders faithfully across FortiOS builds
 	// without baking in per-version field names.
 	HAStatus(ctx context.Context) ([]Object, error)
+	// SSLSessions returns the raw active SSL-VPN session records (monitor
+	// surface), left untyped for the same reason as HAStatus.
+	SSLSessions(ctx context.Context) ([]Object, error)
 
 	// Generic cmdb CRUD. path is the cmdb-relative object path, e.g.
 	// "firewall/address" or "firewall.service/custom". These back the curated

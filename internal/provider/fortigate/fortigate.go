@@ -158,6 +158,16 @@ func (f *fortiGate) HAStatus(ctx context.Context) ([]provider.Object, error) {
 	return out, nil
 }
 
+// SSLSessions reports active SSL-VPN sessions from the monitor surface, returned
+// as raw records so the per-build field set surfaces verbatim.
+func (f *fortiGate) SSLSessions(ctx context.Context) ([]provider.Object, error) {
+	var out []provider.Object
+	if err := f.cl.Do(ctx, &transport.Request{Method: "GET", Path: "monitor/vpn/ssl"}, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Raw backs `fgt api` / `fgt raw`.
 func (f *fortiGate) Raw(ctx context.Context, method, path string, params url.Values, body []byte) ([]byte, error) {
 	return f.cl.DoRaw(ctx, &transport.Request{

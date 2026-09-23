@@ -189,6 +189,26 @@ func TestHAStatus(t *testing.T) {
 	}
 }
 
+func TestSSLSessions(t *testing.T) {
+	var got capture
+	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		got.method, got.path = r.Method, r.URL.Path
+		w.Write(envelope([]map[string]any{
+			{"user_name": "ciro", "remote_host": "203.0.113.9", "duration": 1200},
+		}))
+	})
+	sess, err := p.SSLSessions(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.method != "GET" || got.path != "/api/v2/monitor/vpn/ssl" {
+		t.Errorf("ssl-sessions hit %s %s", got.method, got.path)
+	}
+	if len(sess) != 1 || sess[0]["user_name"] != "ciro" {
+		t.Errorf("ssl sessions passthrough = %v", sess)
+	}
+}
+
 func TestCmdbErrorDecodes(t *testing.T) {
 	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
