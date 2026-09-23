@@ -24,3 +24,29 @@ func TestSupportsVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestCompare(t *testing.T) {
+	cases := []struct {
+		a, b string
+		want int
+	}{
+		{"7.4.3", "7.4.3", 0},
+		{"v7.4.3", "7.4.3", 0}, // leading "v" tolerated on either side
+		{"7.4.3", "v7.4.3", 0},
+		{"7.4.3", "7.4.4", -1}, // patch diff
+		{"7.4.4", "7.4.3", 1},
+		{"7.4.3", "7.6.0", -1}, // minor diff
+		{"8.0.0", "7.6.9", 1},  // major diff
+		{"7.4", "7.4.0", 0},    // missing component == 0
+		{"7.4.0", "7.4", 0},
+		{"7.4.10", "7.4.9", 1},          // numeric (not lexical) compare
+		{"7.4.3-build1396", "7.4.3", 0}, // build suffix ignored
+		{"v7.4.3 beta", "7.4.3", 0},     // trailing suffix ignored
+		{"7.4.3", "7.4.3.1", -1},        // extra component
+	}
+	for _, c := range cases {
+		if got := Compare(c.a, c.b); got != c.want {
+			t.Errorf("Compare(%q, %q) = %d; want %d", c.a, c.b, got, c.want)
+		}
+	}
+}

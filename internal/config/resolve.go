@@ -27,6 +27,10 @@ type Settings struct {
 	RateBurst   int
 	ProfileName string
 	ContextName string
+	// NVDAPIKey is an optional NIST NVD API key used by `fgt cve` for higher
+	// rate limits. It targets the external NVD service, not the FortiGate, so it
+	// is read from env only (NVD_API_KEY or FGT_CLI_NVD_API_KEY).
+	NVDAPIKey string
 }
 
 // Overrides carries explicit flag values (highest precedence). Empty string /
@@ -113,6 +117,9 @@ func Resolve(f *File, ov Overrides) (*Settings, error) {
 	}
 	s.TLSFinger = firstNonEmpty(os.Getenv("FGT_CLI_TLS_FINGERPRINT"), s.TLSFinger)
 	s.Output = firstNonEmpty(os.Getenv("FGT_CLI_OUTPUT"), s.Output)
+	// NVD API key for `fgt cve`: the issue asks for NVD_API_KEY; also honor the
+	// FGT_CLI_ prefix for consistency. The unprefixed name wins when both are set.
+	s.NVDAPIKey = firstNonEmpty(os.Getenv("NVD_API_KEY"), os.Getenv("FGT_CLI_NVD_API_KEY"), s.NVDAPIKey)
 	if v := os.Getenv("FGT_CLI_INSECURE"); v != "" {
 		if b, err := strconv.ParseBool(v); err == nil {
 			s.TLSInsecure = b

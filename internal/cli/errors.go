@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/ciroiriarte/fortigate-cli/internal/protocol"
 )
@@ -22,10 +23,24 @@ const (
 // errCanceled is returned when the user declines a destructive confirmation.
 var errCanceled = errors.New("aborted")
 
+// exitCodeError carries an explicit process exit code for a successful command
+// that still wants to signal a condition (e.g. `cve --exit-code`: the lookup
+// succeeded, but a vulnerability was found). It is not a failure, so Execute
+// does not print it as an error — only the code is used.
+type exitCodeError struct{ code int }
+
+func (e exitCodeError) Error() string {
+	return "requested exit code " + strconv.Itoa(e.code)
+}
+
 // ExitCodeFor maps an error to a process exit code.
 func ExitCodeFor(err error) int {
 	if err == nil {
 		return ExitOK
+	}
+	var ece exitCodeError
+	if errors.As(err, &ece) {
+		return ece.code
 	}
 	if errors.Is(err, errCanceled) {
 		return ExitCanceled

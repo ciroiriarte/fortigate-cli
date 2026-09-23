@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/ciroiriarte/fortigate-cli/internal/domain"
 	"github.com/ciroiriarte/fortigate-cli/internal/provider"
 )
 
@@ -25,6 +26,12 @@ type testProvider struct {
 	createCalled bool
 
 	lastCertImport *provider.CertImport
+
+	deviceVersion string // returned by DeviceStatus (empty by default)
+}
+
+func (tp *testProvider) DeviceStatus(_ context.Context) (domain.DeviceStatus, error) {
+	return domain.DeviceStatus{Version: tp.deviceVersion}, nil
 }
 
 func (tp *testProvider) ImportCertificate(_ context.Context, req provider.CertImport) error {

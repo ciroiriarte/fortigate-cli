@@ -88,6 +88,14 @@ block on hand-writing hundreds of cmdb tables.
   tables, and cross-checking against the Terraform provider's resource map.
 - **M6 — FortiManager backend**: a second `Provider` targeting FortiManager's
   JSON-RPC API for fleet-wide management.
+- **CVE check** ✅ — `fgt cve list` / `fgt cve check <CVE-ID>` report the CVEs
+  affecting the running FortiOS version (read from the device via
+  `monitor/system/status`). CVE data is sourced from **external** public feeds
+  (NIST NVD primary, CIRCL fallback; `--source auto|nvd|circl`), which live in
+  `internal/cve/` with their own HTTP client — deliberately **outside** the
+  FortiGate transport boundary (`internal/transport` is host-pinned to the device
+  and `/api/v2` and never talks to third parties). Data is best-effort; the help
+  points at the Fortinet PSIRT for authoritative advisories.
 - **Cross-cutting**: config backup ✅ / restore ✅ (`fgt system backup|restore`
   over `monitor/system/config/{backup,restore}`; backup live-validated, restore
   gated behind confirmation and not yet hardware-verified). Still: man pages +

@@ -2,6 +2,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -183,6 +184,7 @@ func NewRootCmd() *cobra.Command {
 		newLogCmd(a),
 		newVpnCmd(a),
 		newSwitchCmd(a),
+		newCVECmd(a),
 		newAPICmd(a),
 		newSchemaCmd(a),
 		newConfigCmd(a),
@@ -195,7 +197,13 @@ func NewRootCmd() *cobra.Command {
 func Execute() int {
 	root := NewRootCmd()
 	if err := root.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
+		// An exitCodeError is a deliberate non-zero signal from a command that
+		// already succeeded and rendered its output (e.g. `cve --exit-code`); it
+		// is not a failure, so don't print it as one.
+		var ece exitCodeError
+		if !errors.As(err, &ece) {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+		}
 		return ExitCodeFor(err)
 	}
 	return 0
