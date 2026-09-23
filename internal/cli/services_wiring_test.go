@@ -17,6 +17,9 @@ func TestServicesWiredIntoRoot(t *testing.T) {
 		{"system", "snmp", "sysinfo"},
 		{"system", "snmp", "community"},
 		{"system", "snmp", "user"},
+		{"system", "central-management"},
+		{"system", "fortiguard"},
+		{"system", "zone"},
 		{"system", "backup"},
 		{"system", "restore"},
 	} {

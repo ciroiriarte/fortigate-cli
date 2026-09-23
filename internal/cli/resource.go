@@ -41,6 +41,7 @@ const (
 	kindString    fieldKind = iota // scalar string/number, sent as-is
 	kindRefList                    // comma-separated refs, sent as [{"name":x},...]
 	kindRangeList                  // comma-separated values, sent as [{"range":x},...]
+	kindIfaceList                  // comma-separated ifaces, sent as [{"interface-name":x},...]
 )
 
 type fieldSpec struct {
@@ -271,6 +272,8 @@ func encodeField(kind fieldKind, v string) any {
 		return refList(v)
 	case kindRangeList:
 		return refListKeyed(v, "range")
+	case kindIfaceList:
+		return refListKeyed(v, "interface-name")
 	default:
 		return v
 	}

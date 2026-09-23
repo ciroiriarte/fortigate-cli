@@ -2,20 +2,36 @@
 .TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
 
 .SH NAME
-fgt-system - Inspect and manage system-level configuration and status
+fgt-system-zone-create - Create a zone object
 
 
 .SH SYNOPSIS
-\fBfgt system [flags]\fP
+\fBfgt system zone create [name] [flags]\fP
 
 
 .SH DESCRIPTION
-Inspect and manage system-level configuration and status
+Create a zone object
 
 
 .SH OPTIONS
+\fB--description\fP=""
+	free-text description
+
+.PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for system
+	help for create
+
+.PP
+\fB--interface\fP=""
+	member interface(s), comma-separated
+
+.PP
+\fB--intrazone\fP=""
+	allow|deny (intra-zone traffic)
+
+.PP
+\fB--set\fP=[]
+	set an arbitrary field: --set key=value (repeatable; value may be a,b for ref lists)
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -84,4 +100,4 @@ Inspect and manage system-level configuration and status
 
 
 .SH SEE ALSO
-\fBfgt(1)\fP, \fBfgt-system-admin(1)\fP, \fBfgt-system-backup(1)\fP, \fBfgt-system-central-management(1)\fP, \fBfgt-system-dhcp(1)\fP, \fBfgt-system-dns(1)\fP, \fBfgt-system-fortiguard(1)\fP, \fBfgt-system-ha(1)\fP, \fBfgt-system-interface(1)\fP, \fBfgt-system-ntp(1)\fP, \fBfgt-system-restore(1)\fP, \fBfgt-system-snmp(1)\fP, \fBfgt-system-vdom(1)\fP, \fBfgt-system-zone(1)\fP
+\fBfgt-system-zone(1)\fP

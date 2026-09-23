@@ -26,6 +26,14 @@ func TestRangeListEncoding(t *testing.T) {
 	}
 }
 
+func TestIfaceListEncoding(t *testing.T) {
+	got := encodeField(kindIfaceList, "port1, port2")
+	want := []map[string]string{{"interface-name": "port1"}, {"interface-name": "port2"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("kindIfaceList = %v, want %v", got, want)
+	}
+}
+
 func TestChildCellValueNonNameKeys(t *testing.T) {
 	// A child-table element keyed by "range" (VIP mappedip) must render as its
 	// value, not Go map text.

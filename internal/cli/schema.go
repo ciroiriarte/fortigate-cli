@@ -177,6 +177,8 @@ func genResource(path string, sch provider.Object) string {
 				fmt.Fprintf(&b, "\t\t{name: %q, kind: kindRefList, usage: %q},\n", f.name, note)
 			case "range":
 				fmt.Fprintf(&b, "\t\t{name: %q, kind: kindRangeList, usage: %q},\n", f.name, note)
+			case "interface-name":
+				fmt.Fprintf(&b, "\t\t{name: %q, kind: kindIfaceList, usage: %q},\n", f.name, note)
 			default:
 				fmt.Fprintf(&b, "\t\t// TODO %q is a %s — reach via --set/api\n", f.name, note)
 			}

@@ -11,8 +11,8 @@ import (
 func TestSystemServiceCommands(t *testing.T) {
 	// Build via bare app to ensure commands instantiate without provider.
 	bareCmds := systemServiceCommands(&app{})
-	if len(bareCmds) != 3 {
-		t.Fatalf("systemServiceCommands(&app{}) returned %d commands, want 3", len(bareCmds))
+	if len(bareCmds) != 6 {
+		t.Fatalf("systemServiceCommands(&app{}) returned %d commands, want 6", len(bareCmds))
 	}
 
 	tp := &testProvider{}
@@ -25,6 +25,8 @@ func TestSystemServiceCommands(t *testing.T) {
 	singletons := [][]string{
 		{"ntp"},
 		{"snmp", "sysinfo"},
+		{"central-management"},
+		{"fortiguard"},
 	}
 	for _, s := range singletons {
 		for _, action := range []string{"show", "set"} {

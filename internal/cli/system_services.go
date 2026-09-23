@@ -99,5 +99,50 @@ func systemServiceCommands(a *app) []*cobra.Command {
 		a.newResourceCmd(user),
 	)
 
-	return []*cobra.Command{a.newResourceCmd(ntp), dhcp, snmp}
+	centralMgmt := resource{
+		use: "central-management", aliases: []string{"central-mgmt"}, short: "Manage central management (FortiManager/FortiGuard)", single: true,
+		path: "system/central-management",
+		fields: []fieldSpec{
+			{name: "type", usage: "fortimanager|fortiguard|none"},
+			{name: "fmg", usage: "FortiManager IP or serial"},
+			{name: "fmg-source-ip", usage: "source IP for FortiManager traffic"},
+			{name: "mode", usage: "normal|backup"},
+			{name: "serial-number", usage: "FortiManager serial"},
+			{name: "allow-monitor", usage: "enable|disable"},
+			{name: "allow-push-configuration", usage: "enable|disable"},
+			{name: "include-default-servers", usage: "enable|disable"},
+		},
+	}
+
+	fortiguard := resource{
+		use: "fortiguard", short: "Manage FortiGuard settings", single: true,
+		path: "system/fortiguard",
+		fields: []fieldSpec{
+			{name: "protocol", usage: "udp|http|https"},
+			{name: "port", usage: "53|8888|443"},
+			{name: "service-account-id", usage: "FortiGuard service account"},
+			{name: "auto-firmware-upgrade", usage: "enable|disable"},
+			{name: "update-server-location", usage: "automatic|usa|eu"},
+			{name: "fortiguard-anycast", usage: "enable|disable"},
+			{name: "sdns-server-ip", usage: "FortiGuard DNS server IP(s)"},
+		},
+	}
+
+	zone := resource{
+		use: "zone", short: "Manage interface zones",
+		path: "system/zone", mkey: "name",
+		columns: []column{{field: "name"}, {field: "interface"}, {field: "intrazone"}},
+		fields: []fieldSpec{
+			{name: "interface", kind: kindIfaceList, usage: "member interface(s), comma-separated"},
+			{name: "intrazone", usage: "allow|deny (intra-zone traffic)"},
+			{name: "description", usage: "free-text description"},
+		},
+	}
+
+	return []*cobra.Command{
+		a.newResourceCmd(ntp), dhcp, snmp,
+		a.newResourceCmd(centralMgmt),
+		a.newResourceCmd(fortiguard),
+		a.newResourceCmd(zone),
+	}
 }

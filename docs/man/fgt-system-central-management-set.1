@@ -2,20 +2,56 @@
 .TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
 
 .SH NAME
-fgt-system - Inspect and manage system-level configuration and status
+fgt-system-central-management-set - Update fields on a central-management object
 
 
 .SH SYNOPSIS
-\fBfgt system [flags]\fP
+\fBfgt system central-management set [flags]\fP
 
 
 .SH DESCRIPTION
-Inspect and manage system-level configuration and status
+Update fields on a central-management object
 
 
 .SH OPTIONS
+\fB--allow-monitor\fP=""
+	enable|disable
+
+.PP
+\fB--allow-push-configuration\fP=""
+	enable|disable
+
+.PP
+\fB--fmg\fP=""
+	FortiManager IP or serial
+
+.PP
+\fB--fmg-source-ip\fP=""
+	source IP for FortiManager traffic
+
+.PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for system
+	help for set
+
+.PP
+\fB--include-default-servers\fP=""
+	enable|disable
+
+.PP
+\fB--mode\fP=""
+	normal|backup
+
+.PP
+\fB--serial-number\fP=""
+	FortiManager serial
+
+.PP
+\fB--set\fP=[]
+	set an arbitrary field: --set key=value (repeatable; value may be a,b for ref lists)
+
+.PP
+\fB--type\fP=""
+	fortimanager|fortiguard|none
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -84,4 +120,4 @@ Inspect and manage system-level configuration and status
 
 
 .SH SEE ALSO
-\fBfgt(1)\fP, \fBfgt-system-admin(1)\fP, \fBfgt-system-backup(1)\fP, \fBfgt-system-central-management(1)\fP, \fBfgt-system-dhcp(1)\fP, \fBfgt-system-dns(1)\fP, \fBfgt-system-fortiguard(1)\fP, \fBfgt-system-ha(1)\fP, \fBfgt-system-interface(1)\fP, \fBfgt-system-ntp(1)\fP, \fBfgt-system-restore(1)\fP, \fBfgt-system-snmp(1)\fP, \fBfgt-system-vdom(1)\fP, \fBfgt-system-zone(1)\fP
+\fBfgt-system-central-management(1)\fP
