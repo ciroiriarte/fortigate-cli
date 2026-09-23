@@ -12,7 +12,7 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 | Namespace | Objects | Status | Notes |
 |---|---:|---|---|
 | `firewall` | 92 | partial | address/addrgrp/service×2/policy/vip/vip-group/ippool/central-snat-map/schedule(onetime,recurring)/shaper(traffic,per-ip)/shaping-policy ✅; DoS-policy/proxy-policy ⭕ |
-| `system` | 181 | partial | admin/dns/interface/vdom/ha ✅ (ha adds `status` from monitor); npu 🎫#24; sdwan/dhcp/snmp/ntp/zone/central-mgmt/api-user/automation ⭕ |
+| `system` | 181 | partial | admin/dns/interface/vdom/ha ✅ (ha adds `status` from monitor); sdwan ✅ (`fgt sdwan` settings/zone/member/health-check/service over the child-table sub-paths); npu 🎫#24; dhcp/snmp/ntp/zone/central-mgmt/api-user/automation ⭕ |
 | `router` | 29 | partial | static/policy/bgp/ospf/route-map/prefix-list/access-list ✅ (bgp/ospf singletons; child-tables via `--set`); rip/isis/multicast/bfd ⭕ |
 | `user` | 26 | ⭕ | **identity & auth** — local/radius/ldap/tacacs+/group/saml/fsso/setting. None curated |
 | `vpn` | 24 | partial | ipsec phase1-interface/phase2-interface ✅; **ssl-vpn** (vpn.ssl settings/portal) ⭕; certificate/l2tp/pptp ⭕ |
@@ -29,7 +29,7 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 ## Priority tiers (for the un-curated gaps)
 
 **Tier 1 — core, high-frequency**
-1. **SD-WAN** — `system/sdwan` (zones, members, health-check, service rules)
+1. **SD-WAN** — ✅ `system/sdwan` curated (`fgt sdwan` settings + zone/member/health-check/service, via the FortiOS child-table REST sub-paths)
 2. **Identity & auth** — `user/{local,radius,ldap,tacacs+,group,saml,fsso,setting}`
 3. **SSL-VPN** — `vpn.ssl/settings`, `vpn.ssl.web/portal`
 4. **UTM profiles** — `antivirus/profile`, `webfilter/profile`, `ips/sensor`, `application/list`, `dnsfilter/profile`, `firewall/ssl-ssh-profile`, `firewall/profile-protocol-options`
