@@ -27,6 +27,65 @@ func newRouterCmd(a *app) *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(a.newResourceCmd(static))
+	bgp := resource{
+		use: "bgp", short: "Manage BGP configuration", single: true,
+		path: "router/bgp",
+		fields: []fieldSpec{
+			{name: "as", usage: "local AS number (supports asdot)"},
+			{name: "router-id", usage: "BGP router-id (IPv4)"},
+			{name: "keepalive-timer", usage: "keepalive timer in seconds"},
+			{name: "holdtime-timer", usage: "holdtime timer in seconds"},
+			{name: "ebgp-multipath", usage: "enable|disable"},
+			{name: "ibgp-multipath", usage: "enable|disable"},
+			{name: "graceful-restart", usage: "enable|disable"},
+		},
+	}
+
+	ospf := resource{
+		use: "ospf", short: "Manage OSPF configuration", single: true,
+		path: "router/ospf",
+		fields: []fieldSpec{
+			{name: "router-id", usage: "OSPF router-id (IPv4)"},
+			{name: "default-information-originate", usage: "enable|always|disable"},
+			{name: "distance", usage: "administrative distance"},
+			{name: "abr-type", usage: "cisco|ibm|standard|shortcut"},
+		},
+	}
+
+	routeMap := resource{
+		use: "route-map", short: "Manage route maps",
+		path: "router/route-map", mkey: "name",
+		columns: []column{{field: "name"}, {field: "comments"}},
+		fields: []fieldSpec{
+			{name: "comments", usage: "free-text comment"},
+		},
+	}
+
+	prefixList := resource{
+		use: "prefix-list", short: "Manage prefix lists",
+		path: "router/prefix-list", mkey: "name",
+		columns: []column{{field: "name"}, {field: "comments"}},
+		fields: []fieldSpec{
+			{name: "comments", usage: "free-text comment"},
+		},
+	}
+
+	accessList := resource{
+		use: "access-list", short: "Manage access lists",
+		path: "router/access-list", mkey: "name",
+		columns: []column{{field: "name"}, {field: "comments"}},
+		fields: []fieldSpec{
+			{name: "comments", usage: "free-text comment"},
+		},
+	}
+
+	cmd.AddCommand(
+		a.newResourceCmd(static),
+		a.newResourceCmd(bgp),
+		a.newResourceCmd(ospf),
+		a.newResourceCmd(routeMap),
+		a.newResourceCmd(prefixList),
+		a.newResourceCmd(accessList),
+	)
 	return cmd
 }
