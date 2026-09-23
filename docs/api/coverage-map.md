@@ -15,7 +15,7 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 | `system` | 181 | partial | admin/dns/interface/vdom/ha/ntp/zone/global/settings ✅; sdwan ✅; dhcp server ✅; snmp/central-management/fortiguard ✅; api-user + automation trigger/action/stitch ✅; `status` (version+identity) & `ha status` from monitor; config backup/restore ✅; npu 🎫#24 |
 | `router` | 29 | partial | static/policy/bgp/ospf/route-map/prefix-list/access-list ✅ (bgp/ospf singletons; child-tables via `--set`); rip/isis/multicast/bfd ⭕ |
 | `user` | 26 | partial | local/group/ldap/radius/tacacs+ ✅ (`fgt user`); saml/fsso/setting/peer/certificate ⭕ |
-| `vpn` | 24 | partial | ipsec phase1-interface/phase2-interface ✅; ssl-vpn ✅ (`fgt vpn ssl` settings/authentication-rule/portal + `sessions` from monitor); certificate/l2tp/pptp ⭕ |
+| `vpn` | 24 | partial | ipsec phase1/2 ✅; ssl-vpn ✅ (settings/auth-rule/portal + sessions); certificate ✅ (`fgt vpn certificate` read+import, secrets redacted); l2tp/pptp ⭕ |
 | `log` | 61 | partial | `log setting`, `log syslogd setting`/`filter`, `log fortianalyzer setting` ✅ (`fgt log`); disk/memory/webtrends/fortiguard settings + other filters ⭕ |
 | `switch-controller` | 52 | partial | managed-switch/ports/lldp 🎫#5–7; vlan/qos/security/stp/dynamic-port-policy ⭕ |
 | `wireless-controller` | 43 | ⭕ | FortiAP — vap/wtp/wtp-profile. Only if integrated WiFi (Tier 3) |
@@ -40,7 +40,7 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 
 **Tier 2 — ops/infrastructure**
 - System services — ✅ `system.snmp/*`, `system/ntp`, `system/central-management`, `system/fortiguard`, `system/zone` curated
-- Certificates — `certificate/{local,ca,remote}`, `vpn/certificate`
+- Certificates — ✅ `vpn.certificate/{local,ca,remote,crl,setting}` curated (`fgt vpn certificate`: read-only + secret redaction + import)
 - Automation stitches — ✅ `system/automation-{trigger,action,stitch}` curated
 - REST API bootstrap — ✅ `system/api-user`, per-VDOM `system/settings`, `system/global` curated
 
