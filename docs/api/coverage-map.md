@@ -12,11 +12,11 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 | Namespace | Objects | Status | Notes |
 |---|---:|---|---|
 | `firewall` | 92 | partial | address/addrgrp/service×2/policy/vip/vip-group/ippool/central-snat-map/schedule(onetime,recurring)/shaper(traffic,per-ip)/shaping-policy ✅; DoS-policy/proxy-policy ⭕ |
-| `system` | 181 | partial | admin/dns/interface/vdom/ha ✅ (ha adds `status` from monitor); sdwan ✅ (`fgt sdwan` settings/zone/member/health-check/service over the child-table sub-paths); npu 🎫#24; dhcp/snmp/ntp/zone/central-mgmt/api-user/automation ⭕ |
+| `system` | 181 | partial | admin/dns/interface/vdom/ha/ntp ✅; sdwan ✅ (settings/zone/member/health-check/service); dhcp server ✅; snmp sysinfo/community/user ✅; ha adds `status` from monitor; npu 🎫#24; zone/central-mgmt/api-user/automation ⭕ |
 | `router` | 29 | partial | static/policy/bgp/ospf/route-map/prefix-list/access-list ✅ (bgp/ospf singletons; child-tables via `--set`); rip/isis/multicast/bfd ⭕ |
 | `user` | 26 | partial | local/group/ldap/radius/tacacs+ ✅ (`fgt user`); saml/fsso/setting/peer/certificate ⭕ |
 | `vpn` | 24 | partial | ipsec phase1-interface/phase2-interface ✅; ssl-vpn ✅ (`fgt vpn ssl` settings/authentication-rule/portal + `sessions` from monitor); certificate/l2tp/pptp ⭕ |
-| `log` | 61 | ⭕ | **logging config** — fortianalyzer/syslogd/disk/memory settings, filters. Whole namespace uncurated |
+| `log` | 61 | partial | `log setting`, `log syslogd setting`/`filter`, `log fortianalyzer setting` ✅ (`fgt log`); disk/memory/webtrends/fortiguard settings + other filters ⭕ |
 | `switch-controller` | 52 | partial | managed-switch/ports/lldp 🎫#5–7; vlan/qos/security/stp/dynamic-port-policy ⭕ |
 | `wireless-controller` | 43 | ⭕ | FortiAP — vap/wtp/wtp-profile. Only if integrated WiFi (Tier 3) |
 | antivirus/webfilter/ips/application/dnsfilter/emailfilter | ~49 | ⭕ | **UTM security profiles** — referenced by every policy's `utm-status`. None curated |
@@ -34,12 +34,12 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 3. **SSL-VPN** — ✅ `vpn.ssl/settings` + `authentication-rule` + `vpn.ssl.web/portal` curated (`fgt vpn ssl`, plus `sessions` from monitor/vpn/ssl)
 4. **UTM profiles** — `antivirus/profile`, `webfilter/profile`, `ips/sensor`, `application/list`, `dnsfilter/profile`, `firewall/ssl-ssh-profile`, `firewall/profile-protocol-options`
 5. **NAT & traffic** — ✅ `firewall/central-snat-map`, `firewall/shaper`+`shaping-policy` curated; still ⭕ `firewall/DoS-policy`, `firewall/proxy-policy`
-6. **Logging config** — `log/{fortianalyzer,syslogd,disk,memory} setting`, `log/setting`
-7. **DHCP server** — `system/dhcp server`
+6. **Logging config** — ✅ `log/setting`, `log.syslogd/setting`+`filter`, `log.fortianalyzer/setting` curated; disk/memory/webtrends ⭕
+7. **DHCP server** — ✅ `system.dhcp/server` curated (`fgt system dhcp server`)
 8. **Schedules** — ✅ `firewall.schedule/{onetime,recurring}` curated
 
 **Tier 2 — ops/infrastructure**
-- System services — `system/{snmp,ntp,central-management,fortiguard,zone}`
+- System services — ✅ `system.snmp/*`, `system/ntp` curated; still ⭕ `system/{central-management,fortiguard,zone}`
 - Certificates — `certificate/{local,ca,remote}`, `vpn/certificate`
 - Automation stitches — `system/automation-{trigger,action,stitch}`
 - REST API bootstrap — `system/api-user`; per-VDOM `system/settings`, `system/global`
