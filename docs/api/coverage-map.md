@@ -11,7 +11,7 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 
 | Namespace | Objects | Status | Notes |
 |---|---:|---|---|
-| `firewall` | 92 | partial | address/addrgrp/service×2/policy ✅; vip/ippool 🎫#3; central-snat/shaper/DoS/proxy-policy/schedule ⭕ |
+| `firewall` | 92 | partial | address/addrgrp/service×2/policy/vip/vip-group/ippool/central-snat-map/schedule(onetime,recurring)/shaper(traffic,per-ip)/shaping-policy ✅; DoS-policy/proxy-policy ⭕ |
 | `system` | 181 | partial | admin/dns/interface/vdom/ha ✅ (ha adds `status` from monitor); npu 🎫#24; sdwan/dhcp/snmp/ntp/zone/central-mgmt/api-user/automation ⭕ |
 | `router` | 29 | partial | static/policy/bgp/ospf/route-map/prefix-list/access-list ✅ (bgp/ospf singletons; child-tables via `--set`); rip/isis/multicast/bfd ⭕ |
 | `user` | 26 | ⭕ | **identity & auth** — local/radius/ldap/tacacs+/group/saml/fsso/setting. None curated |
@@ -33,10 +33,10 @@ Legend: ✅ curated · 🎫 tracked (issue #) · ⭕ gap (escape hatch only)
 2. **Identity & auth** — `user/{local,radius,ldap,tacacs+,group,saml,fsso,setting}`
 3. **SSL-VPN** — `vpn.ssl/settings`, `vpn.ssl.web/portal`
 4. **UTM profiles** — `antivirus/profile`, `webfilter/profile`, `ips/sensor`, `application/list`, `dnsfilter/profile`, `firewall/ssl-ssh-profile`, `firewall/profile-protocol-options`
-5. **NAT & traffic** — `firewall/central-snat-map`, `firewall/shaper`+`shaping-policy`, `firewall/DoS-policy`, `firewall/proxy-policy`
+5. **NAT & traffic** — ✅ `firewall/central-snat-map`, `firewall/shaper`+`shaping-policy` curated; still ⭕ `firewall/DoS-policy`, `firewall/proxy-policy`
 6. **Logging config** — `log/{fortianalyzer,syslogd,disk,memory} setting`, `log/setting`
 7. **DHCP server** — `system/dhcp server`
-8. **Schedules** — `firewall.schedule/{onetime,recurring}`
+8. **Schedules** — ✅ `firewall.schedule/{onetime,recurring}` curated
 
 **Tier 2 — ops/infrastructure**
 - System services — `system/{snmp,ntp,central-management,fortiguard,zone}`
