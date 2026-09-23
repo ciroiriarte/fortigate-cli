@@ -71,6 +71,30 @@ func TestGenResource(t *testing.T) {
 	}
 }
 
+func TestSchemaTable(t *testing.T) {
+	tab := schemaTable(sampleSchema())
+	row := map[string][]string{}
+	for _, r := range tab.Rows {
+		row[r[0]] = r
+	}
+	// policyid is the mkey -> MKEY column marks it with the type.
+	if r := row["policyid"]; r == nil || !strings.Contains(r[5], "integer") {
+		t.Errorf("policyid should be marked as the integer mkey: %v", r)
+	}
+	// child-tables render their key in the TYPE column.
+	if r := row["mappedip"]; r == nil || r[1] != "table[range]" {
+		t.Errorf("mappedip type = %v, want table[range]", r)
+	}
+	// enum options render in the OPTIONS column.
+	if r := row["action"]; r == nil || r[3] != "accept|deny" {
+		t.Errorf("action options = %v, want accept|deny", r)
+	}
+	// Raw carries the full schema for json/yaml.
+	if tab.Raw == nil {
+		t.Error("schemaTable must set Raw for json/yaml")
+	}
+}
+
 func TestGenResourceSingleton(t *testing.T) {
 	sch := provider.Object{"mkey": "", "category": "complete", "children": map[string]any{
 		"status": map[string]any{"type": "option", "options": []any{map[string]any{"name": "enable"}}},

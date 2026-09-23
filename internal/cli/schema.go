@@ -103,7 +103,7 @@ func schemaHeader(sch provider.Object) (mkey, mkeyType, category string) {
 
 // schemaTable renders the fields as a table; Raw keeps the full schema for json/yaml.
 func schemaTable(sch provider.Object) output.Tabular {
-	mkey, mkeyType, category := schemaHeader(sch)
+	mkey, mkeyType, _ := schemaHeader(sch)
 	t := output.Tabular{
 		Columns: []string{"FIELD", "TYPE", "MULTI", "OPTIONS", "DEFAULT", "MKEY"},
 		Raw:     sch,
@@ -121,7 +121,6 @@ func schemaTable(sch provider.Object) output.Tabular {
 			f.name, typ, boolMark(f.multi), strings.Join(f.options, "|"), f.def, isMkey,
 		})
 	}
-	_ = category
 	return t
 }
 
@@ -165,20 +164,22 @@ func genResource(path string, sch provider.Object) string {
 		usage := strings.Join(f.options, "|")
 		switch {
 		case f.child:
-			kind := "kindRefList"
-			if f.childKey == "range" {
-				kind = "kindRangeList"
-			}
+			// The framework only models child-tables keyed by "name" (kindRefList)
+			// or "range" (kindRangeList). Any other key — or an unknown one —
+			// can't round-trip through a typed flag, so flag it for --set/api
+			// rather than emit a wrong kind.
 			note := "child-table"
 			if f.childKey != "" {
 				note = "child-table keyed by " + f.childKey
 			}
-			if f.childKey != "" && f.childKey != "name" && f.childKey != "range" {
-				// framework refList emits {name:...}; a different key needs --set/api.
-				fmt.Fprintf(&b, "\t\t// %s %q is a %s — reach via --set/api\n", "TODO", f.name, note)
-				continue
+			switch f.childKey {
+			case "name":
+				fmt.Fprintf(&b, "\t\t{name: %q, kind: kindRefList, usage: %q},\n", f.name, note)
+			case "range":
+				fmt.Fprintf(&b, "\t\t{name: %q, kind: kindRangeList, usage: %q},\n", f.name, note)
+			default:
+				fmt.Fprintf(&b, "\t\t// TODO %q is a %s — reach via --set/api\n", f.name, note)
 			}
-			fmt.Fprintf(&b, "\t\t{name: %q, kind: %s, usage: %q},\n", f.name, kind, note)
 		default:
 			fmt.Fprintf(&b, "\t\t{name: %q, usage: %q},\n", f.name, usage)
 		}

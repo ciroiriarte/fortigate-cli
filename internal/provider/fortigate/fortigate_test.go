@@ -209,6 +209,30 @@ func TestSSLSessions(t *testing.T) {
 	}
 }
 
+func TestSchema(t *testing.T) {
+	var got capture
+	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		got.method, got.path, got.query = r.Method, r.URL.Path, r.URL.RawQuery
+		w.Write(envelope(map[string]any{
+			"mkey": "name", "mkey_type": "string",
+			"children": map[string]any{"type": map[string]any{"type": "option"}},
+		}))
+	})
+	sch, err := p.Schema(context.Background(), "firewall/address")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.method != "GET" || got.path != "/api/v2/cmdb/firewall/address" {
+		t.Errorf("schema hit %s %s", got.method, got.path)
+	}
+	if !strings.Contains(got.query, "action=schema") {
+		t.Errorf("schema query = %q, want action=schema", got.query)
+	}
+	if sch["mkey"] != "name" {
+		t.Errorf("schema decoded wrong: %v", sch)
+	}
+}
+
 func TestCmdbErrorDecodes(t *testing.T) {
 	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
