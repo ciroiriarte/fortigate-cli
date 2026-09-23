@@ -1,6 +1,8 @@
 package cli
 
-// vpn.go exposes VPN IPsec commands over FortiOS's dotted vpn.ipsec cmdb path.
+// vpn.go assembles the `vpn` command group: the IPsec subtree (dotted
+// vpn.ipsec cmdb paths) and the SSL-VPN group (curated config in vpn_ssl.go
+// plus a `sessions` monitor read).
 
 import "github.com/spf13/cobra"
 

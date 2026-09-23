@@ -19,3 +19,21 @@ func TestVpnIPsecCommandTree(t *testing.T) {
 		}
 	}
 }
+
+// TestVpnSSLWiredIntoRoot guards the vpn.go wiring: the ssl subgroup and its
+// monitor `sessions` command (attached in vpn.go, not newVpnSSLCmd) must resolve
+// from the assembled root tree.
+func TestVpnSSLWiredIntoRoot(t *testing.T) {
+	root := NewRootCmd()
+	for _, path := range [][]string{
+		{"vpn", "ssl", "settings"},
+		{"vpn", "ssl", "authentication-rule"},
+		{"vpn", "ssl", "portal"},
+		{"vpn", "ssl", "sessions"},
+	} {
+		cmd, _, err := root.Find(path)
+		if err != nil || cmd.Name() != path[len(path)-1] {
+			t.Errorf("find %q = %v, %v; want leaf %q", path, cmd.Name(), err, path[len(path)-1])
+		}
+	}
+}
