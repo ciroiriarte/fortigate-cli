@@ -2,6 +2,8 @@ module github.com/ciroiriarte/fortigate-cli
 
 go 1.22.0
 
+toolchain go1.26.6
+
 require (
 	github.com/spf13/cobra v1.10.2
 	github.com/zalando/go-keyring v0.2.5
