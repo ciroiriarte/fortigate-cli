@@ -221,7 +221,7 @@ func dispWidth(s string) int { return utf8.RuneCountInString(s) }
 func truncateCells(cells []string, max int) []string {
 	out := make([]string, len(cells))
 	for i, c := range cells {
-		if max > 1 && dispWidth(c) > max {
+		if max >= 1 && dispWidth(c) > max {
 			out[i] = string([]rune(c)[:max-1]) + "…"
 		} else {
 			out[i] = c
