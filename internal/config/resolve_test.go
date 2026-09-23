@@ -40,9 +40,17 @@ func TestValidate_TokenRequiresSecret(t *testing.T) {
 	}
 }
 
-func TestValidate_SessionNotYetSupported(t *testing.T) {
-	s := &Settings{Server: "https://x", AuthType: "session", User: "admin", Secret: "pw"}
-	if err := s.Validate(); err == nil {
-		t.Fatal("expected session auth to report not-implemented")
+func TestValidate_Session(t *testing.T) {
+	// A complete session config validates.
+	ok := &Settings{Server: "https://x", AuthType: "session", User: "admin", Secret: "pw"}
+	if err := ok.Validate(); err != nil {
+		t.Errorf("valid session config rejected: %v", err)
+	}
+	// Missing username / password each fail.
+	if err := (&Settings{Server: "https://x", AuthType: "session", Secret: "pw"}).Validate(); err == nil {
+		t.Error("session auth without a username should fail")
+	}
+	if err := (&Settings{Server: "https://x", AuthType: "session", User: "admin"}).Validate(); err == nil {
+		t.Error("session auth without a password should fail")
 	}
 }

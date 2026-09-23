@@ -78,6 +78,12 @@ func NewClient(s *config.Settings, debug bool) (*transport.Client, error) {
 			return nil, err
 		}
 		ap = t
+	case "session":
+		sp, err := auth.NewSession(s.User, s.Secret)
+		if err != nil {
+			return nil, err
+		}
+		ap = sp
 	default:
 		return nil, fmt.Errorf("unsupported auth type %q", s.AuthType)
 	}

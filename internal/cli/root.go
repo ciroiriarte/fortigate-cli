@@ -24,6 +24,8 @@ type app struct {
 	server      string
 	vdom        string
 	token       string
+	user        string
+	password    string
 	format      string
 	columns     []string
 	noHeaders   bool
@@ -77,6 +79,8 @@ func (a *app) overrides() config.Overrides {
 		Server:      a.server,
 		VDOM:        a.vdom,
 		TokenSecret: a.token,
+		User:        a.user,
+		Password:    a.password,
 		Output:      a.format,
 		Fingerprint: a.fingerprint,
 	}
@@ -152,6 +156,8 @@ func NewRootCmd() *cobra.Command {
 	pf.StringVar(&a.server, "server", "", "FortiGate API base URL (e.g. https://fw.example.com)")
 	pf.StringVar(&a.vdom, "vdom", "", "target VDOM (default: device global/root)")
 	pf.StringVar(&a.token, "token", "", "REST API token (prefer a config secret_ref or FGT_CLI_TOKEN)")
+	pf.StringVar(&a.user, "user", "", "admin username for session auth (or FGT_CLI_USER)")
+	pf.StringVar(&a.password, "password", "", "admin password for session auth (prefer a secret_ref or FGT_CLI_PASSWORD)")
 	pf.StringVarP(&a.format, "format", "o", "", "output format: table|json|yaml|csv|value")
 	pf.StringArrayVarP(&a.columns, "column", "c", nil, "select/order output columns (repeatable)")
 	pf.BoolVar(&a.noHeaders, "no-headers", false, "omit table/csv headers")

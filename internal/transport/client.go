@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strings"
 	"time"
@@ -87,7 +88,18 @@ func New(opt Options) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	hc := &http.Client{Timeout: timeout, Transport: &http.Transport{TLSClientConfig: tlsConf}}
+	// A cookie jar carries the FortiOS session cookie across requests; harmless
+	// for token auth, required for session auth (login + API calls share it).
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return nil, err
+	}
+	hc := &http.Client{Timeout: timeout, Jar: jar, Transport: &http.Transport{TLSClientConfig: tlsConf}}
+	// Session auth needs to make its own /logincheck round-trip through this same
+	// client (and jar); hand it the client + base URL.
+	if b, ok := opt.Auth.(auth.ClientBinder); ok {
+		b.Bind(hc, u)
+	}
 	retries := opt.MaxRetries
 	if retries == 0 {
 		retries = 3

@@ -36,6 +36,8 @@ type Overrides struct {
 	Server      string
 	VDOM        string
 	TokenSecret string
+	User        string
+	Password    string
 	Output      string
 	Insecure    *bool
 	Fingerprint string
@@ -111,8 +113,12 @@ func Resolve(f *File, ov Overrides) (*Settings, error) {
 	// 5. Explicit flags override everything.
 	s.Server = firstNonEmpty(ov.Server, s.Server)
 	s.VDOM = firstNonEmpty(ov.VDOM, s.VDOM)
+	s.User = firstNonEmpty(ov.User, s.User)
 	if ov.TokenSecret != "" {
 		s.Secret = ov.TokenSecret
+	}
+	if ov.Password != "" {
+		s.Secret = ov.Password
 	}
 	s.TLSFinger = firstNonEmpty(ov.Fingerprint, s.TLSFinger)
 	s.Output = firstNonEmpty(ov.Output, s.Output)
@@ -137,9 +143,14 @@ func (s *Settings) Validate() error {
 			return fmt.Errorf("token auth requires an API token: set auth.secret_ref, FGT_CLI_TOKEN, or --token")
 		}
 	case "session":
-		return fmt.Errorf("session auth is not implemented yet (M1 ships API-token auth); use auth.type: token")
+		if s.User == "" {
+			return fmt.Errorf("session auth requires an admin username: set auth.user, FGT_CLI_USER, or --user")
+		}
+		if s.Secret == "" {
+			return fmt.Errorf("session auth requires a password: set auth.secret_ref, FGT_CLI_PASSWORD, or --password")
+		}
 	default:
-		return fmt.Errorf("unknown auth type %q (want token)", s.AuthType)
+		return fmt.Errorf("unknown auth type %q (want token or session)", s.AuthType)
 	}
 	return nil
 }
