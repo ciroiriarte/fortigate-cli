@@ -3,6 +3,8 @@
 package domain
 
 // Interface is a FortiOS system interface (physical, VLAN, aggregate, ...).
+// Speed/Duplex are live link parameters from the monitor surface (empty when the
+// build does not report them, e.g. virtual or down interfaces).
 type Interface struct {
 	Name   string `json:"name"`
 	Type   string `json:"type"`
@@ -10,6 +12,8 @@ type Interface struct {
 	Status string `json:"status"`
 	VDOM   string `json:"vdom"`
 	Alias  string `json:"alias"`
+	Speed  string `json:"speed,omitempty"`
+	Duplex string `json:"duplex,omitempty"`
 }
 
 // DeviceStatus is the "what am I talking to" probe (monitor/system/status):

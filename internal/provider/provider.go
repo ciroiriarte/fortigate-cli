@@ -53,6 +53,17 @@ type Provider interface {
 	// surface), left untyped for the same reason as HAStatus.
 	SSLSessions(ctx context.Context) ([]Object, error)
 
+	// ListTransceivers returns pluggable-optic DDM inventory
+	// (monitor/system/interface/transceivers). The endpoint schema is unverified,
+	// so the implementation decodes tolerantly and each Transceiver carries its
+	// untouched device record in Raw. An unsupported/404 endpoint (e.g. a VM)
+	// yields an empty slice and nil error, never a failure.
+	ListTransceivers(ctx context.Context) ([]domain.Transceiver, error)
+	// ListSensors returns hardware sensor readings (monitor/system/sensor-info),
+	// decoded tolerantly with the original record in Raw. Same absent-hardware
+	// contract as ListTransceivers.
+	ListSensors(ctx context.Context) ([]domain.Sensor, error)
+
 	// Generic cmdb CRUD. path is the cmdb-relative object path, e.g.
 	// "firewall/address" or "firewall.service/custom". These back the curated
 	// resource commands and work for any object on any FortiOS version.

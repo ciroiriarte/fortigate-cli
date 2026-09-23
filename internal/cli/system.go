@@ -70,6 +70,8 @@ func newSystemCmd(a *app) *cobra.Command {
 	// config backup/restore (system_backup.go).
 	cmd.AddCommand(newBackupCmd(a), newRestoreCmd(a))
 	cmd.AddCommand(newStatusCmd(a))
+	// physical health surface (system_health.go): optics, sensors, roll-up.
+	cmd.AddCommand(newTransceiverCmd(a), newSensorCmd(a), newHealthCmd(a))
 	return cmd
 }
 
@@ -164,11 +166,11 @@ func interfaceListCmd(a *app) *cobra.Command {
 				return err
 			}
 			t := output.Tabular{
-				Columns: []string{"NAME", "TYPE", "IP", "STATUS", "VDOM", "ALIAS"},
+				Columns: []string{"NAME", "TYPE", "IP", "STATUS", "SPEED", "DUPLEX", "VDOM", "ALIAS"},
 				Raw:     ifaces,
 			}
 			for _, i := range ifaces {
-				t.Rows = append(t.Rows, []string{i.Name, i.Type, i.IP, i.Status, i.VDOM, i.Alias})
+				t.Rows = append(t.Rows, []string{i.Name, i.Type, i.IP, i.Status, i.Speed, i.Duplex, i.VDOM, i.Alias})
 			}
 			return a.render(t)
 		},

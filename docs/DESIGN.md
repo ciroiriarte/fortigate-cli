@@ -88,6 +88,18 @@ block on hand-writing hundreds of cmdb tables.
   tables, and cross-checking against the Terraform provider's resource map.
 - **M6 — FortiManager backend**: a second `Provider` targeting FortiManager's
   JSON-RPC API for fleet-wide management.
+- **M7 — physical health & topology** (#46) 🚧: remote physical-layer
+  validation and an observed topology graph over the monitor surface.
+  Phase 1: `system transceiver list` (`monitor/system/interface/transceivers`
+  DDM optics), `system sensor list` (`monitor/system/sensor-info` PSU/fan/temp),
+  enriched interface speed/duplex, and a `system health` roll-up that grades
+  pass/warn/fail from **device-supplied thresholds only** (never invented
+  dBm/°C), degrades to N/A on VM/absent hardware, and sets a CI exit code
+  (`--fail-on warn|error`, mirroring `fgt cve`). Phase 2: LLDP neighbors, HA-link
+  cross-check, and `system topology` (Mermaid/DOT **text** output — no bundled
+  SVG/PNG renderer). Cabling validation is inferential only (LLDP mismatch,
+  admin-up+link-down, speed-below-expected); REST cannot physically trace a
+  cable, and TDR/copper length tests need a CLI trigger that blocks the API.
 - **CVE check** ✅ — `fgt cve list` / `fgt cve check <CVE-ID>` report the CVEs
   affecting the running FortiOS version (read from the device via
   `monitor/system/status`). CVE data is sourced from **external** public feeds

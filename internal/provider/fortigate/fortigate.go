@@ -42,6 +42,10 @@ func (f *fortiGate) ListInterfaces(ctx context.Context) ([]domain.Interface, err
 		Link bool   `json:"link"`
 		Type string `json:"type"`
 		VDOM string `json:"vdom"`
+		// speed/duplex shapes vary by build (speed as a number of Mbit/s or a
+		// string; duplex as "full"/"half" or 0/1), so decode tolerantly.
+		Speed  any `json:"speed"`
+		Duplex any `json:"duplex"`
 	}
 	if err := f.cl.Do(ctx, &transport.Request{Method: "GET", Path: "monitor/system/interface"}, &raw); err != nil {
 		return nil, err
@@ -63,6 +67,8 @@ func (f *fortiGate) ListInterfaces(ctx context.Context) ([]domain.Interface, err
 			Status: status,
 			VDOM:   v.VDOM,
 			Alias:  v.Alias,
+			Speed:  scalarString(v.Speed),
+			Duplex: duplexString(v.Duplex),
 		})
 	}
 	return out, nil
