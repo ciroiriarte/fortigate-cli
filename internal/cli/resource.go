@@ -38,8 +38,9 @@ type column struct {
 type fieldKind int
 
 const (
-	kindString  fieldKind = iota // scalar string/number, sent as-is
-	kindRefList                  // comma-separated refs, sent as [{"name":x},...]
+	kindString    fieldKind = iota // scalar string/number, sent as-is
+	kindRefList                    // comma-separated refs, sent as [{"name":x},...]
+	kindRangeList                  // comma-separated values, sent as [{"range":x},...]
 )
 
 type fieldSpec struct {
@@ -265,19 +266,30 @@ func (r resource) body(cmd *cobra.Command, vals map[string]*string) provider.Obj
 }
 
 func encodeField(kind fieldKind, v string) any {
-	if kind == kindRefList {
+	switch kind {
+	case kindRefList:
 		return refList(v)
+	case kindRangeList:
+		return refListKeyed(v, "range")
+	default:
+		return v
 	}
-	return v
 }
 
 // refList turns "a, b, c" into [{"name":"a"},{"name":"b"},{"name":"c"}], the
 // shape FortiOS expects for reference child-tables (srcaddr, member, ...).
 func refList(csv string) []map[string]string {
+	return refListKeyed(csv, "name")
+}
+
+// refListKeyed turns "a, b, c" into [{key:"a"},{key:"b"},{key:"c"}] — the shape
+// FortiOS expects for child-tables whose element key is not "name" (e.g. VIP
+// mappedip uses "range").
+func refListKeyed(csv, key string) []map[string]string {
 	out := []map[string]string{}
 	for _, s := range strings.Split(csv, ",") {
 		if s = strings.TrimSpace(s); s != "" {
-			out = append(out, map[string]string{"name": s})
+			out = append(out, map[string]string{key: s})
 		}
 	}
 	return out
@@ -337,18 +349,27 @@ func cellValue(v any) string {
 	case []any:
 		var names []string
 		for _, e := range t {
-			if m, ok := e.(map[string]any); ok {
-				if n, ok := m["name"].(string); ok {
-					names = append(names, n)
-					continue
-				}
-			}
 			names = append(names, cellValue(e))
 		}
 		return strings.Join(names, ",")
+	case map[string]any:
+		return childCellValue(t)
 	default:
 		return fmt.Sprintf("%v", t)
 	}
+}
+
+// childCellValue renders a single child-table element (a JSON object) for a
+// table cell by pulling the value under the first recognized key. FortiOS keys
+// child-tables by "name" for most objects, but by "range" (VIP mappedip),
+// "subnet" (policy src/dst), or "interface-name" (aggregate members) elsewhere.
+func childCellValue(m map[string]any) string {
+	for _, k := range []string{"name", "range", "subnet", "interface-name"} {
+		if v, ok := m[k]; ok {
+			return cellValue(v)
+		}
+	}
+	return fmt.Sprintf("%v", m)
 }
 
 // objectsTable renders a slice of untyped objects as a table whose columns are

@@ -18,6 +18,30 @@ func TestRefList(t *testing.T) {
 	}
 }
 
+func TestRangeListEncoding(t *testing.T) {
+	got := encodeField(kindRangeList, "10.0.0.5, 10.0.0.6")
+	want := []map[string]string{{"range": "10.0.0.5"}, {"range": "10.0.0.6"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("kindRangeList = %v, want %v", got, want)
+	}
+}
+
+func TestChildCellValueNonNameKeys(t *testing.T) {
+	// A child-table element keyed by "range" (VIP mappedip) must render as its
+	// value, not Go map text.
+	if got := cellValue([]any{map[string]any{"range": "10.0.0.5"}}); got != "10.0.0.5" {
+		t.Errorf("range child = %q, want 10.0.0.5", got)
+	}
+	// A bare object keyed by "range" (mappedip can come back as a single object).
+	if got := cellValue(map[string]any{"range": "10.0.0.5", "q_origin_key": "10.0.0.5"}); got != "10.0.0.5" {
+		t.Errorf("bare range object = %q, want 10.0.0.5", got)
+	}
+	// name still wins when present.
+	if got := cellValue([]any{map[string]any{"name": "all"}}); got != "all" {
+		t.Errorf("name child = %q, want all", got)
+	}
+}
+
 func TestCellValue(t *testing.T) {
 	cases := []struct {
 		in   any

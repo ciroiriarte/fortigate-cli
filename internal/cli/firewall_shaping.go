@@ -107,7 +107,7 @@ func firewallShapingCommands(a *app) []*cobra.Command {
 		mkeyArg: "id",
 		numeric: true,
 		columns: []column{
-			{field: "id", header: "ID"},
+			{field: "id"},
 			{field: "srcaddr", header: "SRC"},
 			{field: "dstaddr", header: "DST"},
 			{field: "service"},

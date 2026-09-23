@@ -9,12 +9,12 @@ func firewallNATCommands(a *app) []*cobra.Command {
 		use: "vip", short: "Manage firewall virtual IP objects",
 		path: "firewall/vip", mkey: "name",
 		columns: []column{{field: "name"}, {field: "extip"}, {field: "mappedip"},
-			{field: "extport", header: "EXTPORT"}, {field: "mappedport", header: "MAPPEDPORT"}, {field: "portforward"}},
+			{field: "extport"}, {field: "mappedport"}, {field: "portforward"}},
 		fields: []fieldSpec{
 			{name: "type", usage: "static-nat|load-balance|server-load-balance|dns-translation|fqdn|access-proxy"},
 			{name: "extip", usage: "external IP address or range"},
 			{name: "extintf", usage: "external interface, e.g. any"},
-			{name: "mappedip", usage: "mapped IP (single IP only; use --set for ranges)"},
+			{name: "mappedip", kind: kindRangeList, usage: "mapped IP(s)/range(s), comma-separated (cmdb child-table keyed by range)"},
 			{name: "extport", usage: "external port or range"},
 			{name: "mappedport", usage: "mapped port or range"},
 			{name: "portforward", usage: "enable|disable"},
@@ -50,9 +50,8 @@ func firewallNATCommands(a *app) []*cobra.Command {
 	centralSNATMap := resource{
 		use: "central-snat-map", aliases: []string{"snat", "central-snat"}, short: "Manage central SNAT maps",
 		path: "firewall/central-snat-map", mkey: "policyid", mkeyArg: "policyid", numeric: true,
-		columns: []column{{field: "policyid", header: "ID"}, {field: "srcintf", header: "SRCINTF"},
-			{field: "dstintf", header: "DSTINTF"}, {field: "orig-addr", header: "ORIG-ADDR"},
-			{field: "dst-addr", header: "DST-ADDR"}, {field: "nat"}},
+		columns: []column{{field: "policyid", header: "ID"}, {field: "srcintf"},
+			{field: "dstintf"}, {field: "orig-addr"}, {field: "dst-addr"}, {field: "nat"}},
 		fields: []fieldSpec{
 			{name: "srcintf", kind: kindRefList, usage: "source interface(s)/zone(s)"},
 			{name: "dstintf", kind: kindRefList, usage: "destination interface(s)/zone(s)"},
