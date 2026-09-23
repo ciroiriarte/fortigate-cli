@@ -55,6 +55,31 @@ func newVpnCmd(a *app) *cobra.Command {
 
 	ipsec := &cobra.Command{Use: "ipsec", Short: "Manage IPsec VPN configuration"}
 	ipsec.AddCommand(a.newResourceCmd(phase1), a.newResourceCmd(phase2))
-	cmd.AddCommand(ipsec)
+
+	// SSL-VPN: curated config (vpn_ssl.go) plus a monitor read of active sessions.
+	ssl := newVpnSSLCmd(a)
+	ssl.AddCommand(sslSessionsCmd(a))
+
+	cmd.AddCommand(ipsec, ssl)
 	return cmd
+}
+
+// sslSessionsCmd lists active SSL-VPN sessions (monitor surface).
+func sslSessionsCmd(a *app) *cobra.Command {
+	return &cobra.Command{
+		Use:   "sessions",
+		Short: "List active SSL-VPN sessions (monitor surface)",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			p, err := a.Provider()
+			if err != nil {
+				return err
+			}
+			sessions, err := p.SSLSessions(cmd.Context())
+			if err != nil {
+				return err
+			}
+			return a.render(objectsTable(sessions))
+		},
+	}
 }
