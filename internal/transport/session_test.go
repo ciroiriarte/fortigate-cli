@@ -73,8 +73,8 @@ func TestSessionAuthFlow(t *testing.T) {
 	}
 }
 
-// TestGlobalScope asserts a Global client sends ?global=1 (not ?vdom=), and a
-// per-request VDOM still overrides it.
+// TestGlobalScope asserts a Global client sends ?global=1 (overriding the
+// client-default VDOM), and that a per-request VDOM still overrides global.
 func TestGlobalScope(t *testing.T) {
 	var q string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -87,11 +87,19 @@ func TestGlobalScope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// global client + client-default VDOM => global=1, no vdom.
 	if _, err := c.DoRaw(context.Background(), &Request{Method: "GET", Path: "cmdb/system/global"}); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(q, "global=1") || strings.Contains(q, "vdom=") {
 		t.Errorf("global-scope query = %q, want global=1 and no vdom", q)
+	}
+	// a per-request VDOM overrides global (documented Request.VDOM contract).
+	if _, err := c.DoRaw(context.Background(), &Request{Method: "GET", Path: "cmdb/x", VDOM: "prod"}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(q, "vdom=prod") || strings.Contains(q, "global=") {
+		t.Errorf("per-request vdom query = %q, want vdom=prod and no global", q)
 	}
 }
 

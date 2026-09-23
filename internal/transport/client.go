@@ -215,12 +215,13 @@ func (c *Client) attempt(ctx context.Context, req *Request) (body []byte, status
 	// otherwise the client default global scope (?global=1) or vdom (?vdom=).
 	if query.Get("vdom") == "" && query.Get("global") == "" {
 		switch {
+		case req.VDOM != "":
+			// A per-request VDOM overrides the client default, global included.
+			query.Set("vdom", req.VDOM)
 		case c.global:
 			query.Set("global", "1")
-		default:
-			if vdom := firstNonEmpty(req.VDOM, c.vdom); vdom != "" {
-				query.Set("vdom", vdom)
-			}
+		case c.vdom != "":
+			query.Set("vdom", c.vdom)
 		}
 	}
 	if len(query) > 0 {

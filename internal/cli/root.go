@@ -172,6 +172,7 @@ func NewRootCmd() *cobra.Command {
 	pf.StringVar(&a.fingerprint, "tls-fingerprint", "", "pin the server cert SHA-256 fingerprint")
 	pf.BoolVar(&a.debug, "debug", false, "log request/response metadata to stderr")
 	pf.BoolVarP(&a.assumeYes, "yes", "y", false, "assume yes for destructive confirmations")
+	root.MarkFlagsMutuallyExclusive("global", "vdom")
 
 	root.AddCommand(
 		newSystemCmd(a),

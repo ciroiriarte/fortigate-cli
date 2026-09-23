@@ -43,6 +43,27 @@ func TestSetUpsertFallback(t *testing.T) {
 	if tp2.createCalled {
 		t.Error("without --upsert there must be no create")
 	}
+
+	// --upsert must NOT mask a genuine (non-not-found) failure: it propagates
+	// and never falls back to create.
+	tp3 := &testProvider{updateErr: &protocol.APIError{Kind: protocol.KindConflict, HTTPStatus: 500}}
+	a3 := &app{prov: tp3, assumeYes: true}
+	cmd3 := a3.resSet(r)
+	cmd3.SetOut(io.Discard)
+	_ = cmd3.Flags().Set("comment", "x")
+	_ = cmd3.Flags().Set("upsert", "true")
+	if err := cmd3.RunE(cmd3, []string{"web"}); err == nil {
+		t.Error("--upsert must not swallow a non-not-found error")
+	}
+	if tp3.createCalled {
+		t.Error("--upsert must not create on a non-not-found failure")
+	}
+
+	// singletons have no --upsert flag (upsert is meaningless without an mkey).
+	single := a.resSet(resource{use: "dns", path: "system/dns", single: true})
+	if single.Flags().Lookup("upsert") != nil {
+		t.Error("singleton set should not register --upsert")
+	}
 }
 
 func TestRefList(t *testing.T) {

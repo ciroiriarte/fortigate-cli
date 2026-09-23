@@ -113,7 +113,8 @@ func DecodeData(body []byte, out any) error {
 // DecodeError builds an APIError from a non-2xx response.
 // errorCodeText maps the common FortiOS numeric `error` codes to a short
 // message, used when the body carries no cli_error. Not exhaustive (~300+
-// exist); the raw code is always appended so any code stays diagnosable.
+// exist); an unmapped code is surfaced in the generic fallback message and
+// retained on APIError.Code.
 var errorCodeText = map[int]string{
 	-3:  "entry not found",
 	-5:  "unable to match the entry",
@@ -142,6 +143,11 @@ func DecodeError(status int, body []byte) *APIError {
 	}
 	if e.Message == "" {
 		e.Message = fmt.Sprintf("request failed with HTTP %d", status)
+	}
+	// Surface an unmapped numeric code so it stays diagnosable (mapped codes and
+	// cli_error already carry meaning, so only append when the message is generic).
+	if e.Code != 0 && (strings.HasPrefix(e.Message, "request failed with HTTP") || strings.HasPrefix(e.Message, "FortiOS returned status")) {
+		e.Message = fmt.Sprintf("%s (error %d)", e.Message, e.Code)
 	}
 	return e
 }

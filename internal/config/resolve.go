@@ -125,8 +125,13 @@ func Resolve(f *File, ov Overrides) (*Settings, error) {
 	if ov.Global != nil {
 		s.Global = *ov.Global
 	}
-	// Global scope and a VDOM are mutually exclusive; --global wins and clears
-	// any inherited VDOM so requests carry ?global=1, not ?vdom=.
+	// An explicit --vdom flag wins over an env/profile-implied global scope
+	// (honors the documented flag > env precedence).
+	if ov.VDOM != "" {
+		s.Global = false
+	}
+	// Global scope and a VDOM are mutually exclusive; when global wins, clear any
+	// inherited VDOM so requests carry ?global=1, not ?vdom=.
 	if s.Global {
 		s.VDOM = ""
 	}
