@@ -12,6 +12,16 @@ type Interface struct {
 	Alias  string `json:"alias"`
 }
 
+// DeviceStatus is the "what am I talking to" probe (monitor/system/status):
+// model/serial/FortiOS version, used for identity display and version gating.
+type DeviceStatus struct {
+	Hostname string `json:"hostname"`
+	Model    string `json:"model"`
+	Serial   string `json:"serial"`
+	Version  string `json:"version"`
+	Build    int    `json:"build"`
+}
+
 // ManagedSwitch is a FortiLink-managed FortiSwitch as seen by the FortiGate's
 // switch-controller.
 type ManagedSwitch struct {

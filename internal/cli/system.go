@@ -1,9 +1,13 @@
 package cli
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/spf13/cobra"
 
 	"github.com/ciroiriarte/fortigate-cli/internal/output"
+	"github.com/ciroiriarte/fortigate-cli/internal/version"
 )
 
 func newSystemCmd(a *app) *cobra.Command {
@@ -61,6 +65,7 @@ func newSystemCmd(a *app) *cobra.Command {
 	cmd.AddCommand(systemServiceCommands(a)...)
 	// config backup/restore (system_backup.go).
 	cmd.AddCommand(newBackupCmd(a), newRestoreCmd(a))
+	cmd.AddCommand(newStatusCmd(a))
 	return cmd
 }
 
@@ -68,6 +73,43 @@ func newSystemCmd(a *app) *cobra.Command {
 // live status/IP the cmdb object alone does not carry; show/create/set/delete
 // operate on the cmdb config object. Aggregate `member` and other child-tables
 // are reachable via --set / the api escape hatch.
+// newStatusCmd shows device identity + FortiOS version (monitor surface) and
+// notes whether the detected version is in fgt's supported matrix.
+func newStatusCmd(a *app) *cobra.Command {
+	return &cobra.Command{
+		Use:   "status",
+		Short: "Show device identity + FortiOS version (monitor surface)",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			p, err := a.Provider()
+			if err != nil {
+				return err
+			}
+			st, err := p.DeviceStatus(cmd.Context())
+			if err != nil {
+				return err
+			}
+			supported, mm := version.SupportsVersion(st.Version)
+			supNote := "yes"
+			if !supported {
+				supNote = "no (untested — fgt targets " + version.SupportedFortiOS + ")"
+				fmt.Fprintf(cmd.ErrOrStderr(),
+					"[fgt] warning: FortiOS %s (%s series) is outside the tested matrix (%s); commands should still work via the api escape hatch\n",
+					st.Version, mm, version.SupportedFortiOS)
+			}
+			t := output.Tabular{Columns: []string{"FIELD", "VALUE"}, Raw: st, Rows: [][]string{
+				{"hostname", st.Hostname},
+				{"model", st.Model},
+				{"serial", st.Serial},
+				{"version", st.Version},
+				{"build", strconv.Itoa(st.Build)},
+				{"supported", supNote},
+			}}
+			return a.render(t)
+		},
+	}
+}
+
 func newInterfaceCmd(a *app) *cobra.Command {
 	iface := &cobra.Command{
 		Use:     "interface",

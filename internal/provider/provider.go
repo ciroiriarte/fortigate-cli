@@ -32,6 +32,8 @@ type Provider interface {
 	ListInterfaces(ctx context.Context) ([]domain.Interface, error)
 	// ListManagedSwitches returns FortiLink-managed FortiSwitch units.
 	ListManagedSwitches(ctx context.Context) ([]domain.ManagedSwitch, error)
+	// DeviceStatus returns device identity + FortiOS version (monitor surface).
+	DeviceStatus(ctx context.Context) (domain.DeviceStatus, error)
 	// HAStatus returns the raw HA cluster member records (monitor surface). The
 	// shape is left untyped so it renders faithfully across FortiOS builds
 	// without baking in per-version field names.

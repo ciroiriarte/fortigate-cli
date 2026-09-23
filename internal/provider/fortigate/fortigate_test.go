@@ -209,6 +209,25 @@ func TestSSLSessions(t *testing.T) {
 	}
 }
 
+func TestDeviceStatus(t *testing.T) {
+	var got capture
+	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		got.method, got.path = r.Method, r.URL.Path
+		// serial/version/build are envelope-level; model/hostname in results.
+		w.Write([]byte(`{"results":{"model":"FG100F","hostname":"fw1"},"serial":"FG100FTK1","version":"v7.4.12","build":2902,"status":"success"}`))
+	})
+	st, err := p.DeviceStatus(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.path != "/api/v2/monitor/system/status" {
+		t.Errorf("status hit %s", got.path)
+	}
+	if st.Hostname != "fw1" || st.Model != "FG100F" || st.Serial != "FG100FTK1" || st.Version != "v7.4.12" || st.Build != 2902 {
+		t.Errorf("device status = %+v", st)
+	}
+}
+
 func TestConfigBackup(t *testing.T) {
 	var got capture
 	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {

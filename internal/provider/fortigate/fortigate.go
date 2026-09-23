@@ -68,6 +68,34 @@ func (f *fortiGate) ListInterfaces(ctx context.Context) ([]domain.Interface, err
 	return out, nil
 }
 
+// DeviceStatus reads monitor/system/status. serial/version/build sit at the
+// envelope top level (siblings of results); model/hostname are inside results.
+func (f *fortiGate) DeviceStatus(ctx context.Context) (domain.DeviceStatus, error) {
+	body, err := f.cl.DoRaw(ctx, &transport.Request{Method: "GET", Path: "monitor/system/status"})
+	if err != nil {
+		return domain.DeviceStatus{}, err
+	}
+	var raw struct {
+		Serial  string `json:"serial"`
+		Version string `json:"version"`
+		Build   int    `json:"build"`
+		Results struct {
+			Model    string `json:"model"`
+			Hostname string `json:"hostname"`
+		} `json:"results"`
+	}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return domain.DeviceStatus{}, err
+	}
+	return domain.DeviceStatus{
+		Hostname: raw.Results.Hostname,
+		Model:    raw.Results.Model,
+		Serial:   raw.Serial,
+		Version:  raw.Version,
+		Build:    raw.Build,
+	}, nil
+}
+
 // cmdbPath joins the cmdb prefix with an object path and optional mkey.
 func cmdbPath(path, mkey string) string {
 	p := "cmdb/" + strings.Trim(path, "/")
