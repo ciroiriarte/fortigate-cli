@@ -16,12 +16,23 @@ type testProvider struct {
 	provider.Provider
 	lastPath string
 	lastObj  provider.Object
+
+	restoreCalled bool
+	restoreScope  string
+	restoreCfg    []byte
 }
 
 func (tp *testProvider) CmdbCreate(_ context.Context, path string, obj provider.Object) (string, error) {
 	tp.lastPath = path
 	tp.lastObj = obj
 	return "1", nil
+}
+
+func (tp *testProvider) ConfigRestore(_ context.Context, scope, _ string, cfg []byte) error {
+	tp.restoreCalled = true
+	tp.restoreScope = scope
+	tp.restoreCfg = cfg
+	return nil
 }
 
 func TestFirewallShapingCommandTree(t *testing.T) {
