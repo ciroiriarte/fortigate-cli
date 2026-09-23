@@ -92,5 +92,10 @@ func newFirewallCmd(a *app) *cobra.Command {
 		service,
 		a.newResourceCmd(policy),
 	)
+	// NAT (vip/vip-group/ippool/central-snat-map) and traffic-shaping/schedule
+	// resources live in firewall_nat.go / firewall_shaping.go to keep this file
+	// focused; wire their command sets in here.
+	cmd.AddCommand(firewallNATCommands(a)...)
+	cmd.AddCommand(firewallShapingCommands(a)...)
 	return cmd
 }
