@@ -88,7 +88,9 @@ block on hand-writing hundreds of cmdb tables.
   tables, and cross-checking against the Terraform provider's resource map.
 - **M6 — FortiManager backend**: a second `Provider` targeting FortiManager's
   JSON-RPC API for fleet-wide management.
-- **Cross-cutting**: config backup/restore (`/api/v2/backup`), man pages +
+- **Cross-cutting**: config backup ✅ / restore ✅ (`fgt system backup|restore`
+  over `monitor/system/config/{backup,restore}`; backup live-validated, restore
+  gated behind confirmation and not yet hardware-verified). Still: man pages +
   shell completions + `docs` target, GoReleaser `.deb`/`.rpm`, OBS packaging
   (all as in pve-cli).
 

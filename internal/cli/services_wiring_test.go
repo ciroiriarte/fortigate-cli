@@ -17,6 +17,8 @@ func TestServicesWiredIntoRoot(t *testing.T) {
 		{"system", "snmp", "sysinfo"},
 		{"system", "snmp", "community"},
 		{"system", "snmp", "user"},
+		{"system", "backup"},
+		{"system", "restore"},
 	} {
 		cmd, _, err := root.Find(path)
 		if err != nil || cmd.Name() != path[len(path)-1] {
