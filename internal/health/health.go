@@ -189,8 +189,9 @@ func GradeSensor(s domain.Sensor) Finding {
 	}
 }
 
-// GradeInterface grades one interface: admin-up + link-down is critical (only
-// when admin state is known), half-duplex is a warning, and speed below
+// GradeInterface grades one interface: admin-up + link-down is a warning (only
+// when admin state is known — FortiOS leaves unused ports admin-enabled, so this
+// is common and not critical), half-duplex is a warning, and speed below
 // minSpeedMbps (0 = no check) is a warning. Otherwise a status finding is
 // emitted: PASS when the link is up, N/A when link state cannot be judged.
 func GradeInterface(f InterfaceFact, minSpeedMbps float64) []Finding {
@@ -199,9 +200,11 @@ func GradeInterface(f InterfaceFact, minSpeedMbps float64) []Finding {
 
 	if f.AdminUp != nil && *f.AdminUp && f.LinkUp != nil && !*f.LinkUp {
 		issue = true
-		out = append(out, Finding{Critical, "interface.link", f.Name, "admin up but link down"})
+		out = append(out, Finding{Warn, "interface.link", f.Name, "admin up but link down"})
 	}
-	if strings.EqualFold(f.Duplex, "half") {
+	// Only grade duplex on an UP link: a down link reports no real duplex (and
+	// enrichment leaves it empty), so half-duplex must never fire on it.
+	if f.LinkUp != nil && *f.LinkUp && strings.EqualFold(f.Duplex, "half") {
 		issue = true
 		out = append(out, Finding{Warn, "interface.duplex", f.Name, "half-duplex link"})
 	}

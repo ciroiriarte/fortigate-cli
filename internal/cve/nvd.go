@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 
@@ -253,9 +252,12 @@ func metricFields(m nvdCVSSMetric) (float64, string, string) {
 // fortiosRange scans the CVE's configurations for a FortiOS cpeMatch and returns
 // the affected-version window for the vulnerable FortiOS entry. It prefers the
 // candidate whose range actually contains the running version so the reported
-// bounds describe the affecting configuration; otherwise it falls back to the
-// one with the lowest fixed version. matched reports whether any FortiOS
-// cpeMatch was found at all.
+// bounds describe the affecting configuration; otherwise it falls back to a
+// candidate on the running version's own branch (major.minor) so a 7.4 box sees
+// the 7.4-branch fixed-in rather than an unrelated branch's numbers. matched
+// reports whether a range relevant to the running version was found; when it is
+// false the caller must not report FixedIn/IntroducedIn, since the running branch
+// was never covered by this CVE.
 func (r nvdCVE) fortiosRange(running string) (rng versionRange, matched bool) {
 	var candidates []nvdCPEMatch
 	for _, cfg := range r.Configurations {
@@ -280,25 +282,43 @@ func (r nvdCVE) fortiosRange(running string) (rng versionRange, matched bool) {
 			return r, true
 		}
 	}
-	// No candidate contains the running version: report the one with the lowest
-	// fixed version, treating an empty (open-ended) upper bound as the highest so
-	// it sorts LAST rather than first.
-	sort.SliceStable(candidates, func(i, j int) bool {
-		return lessFixed(candidates[i].VersionEndExcluding, candidates[j].VersionEndExcluding)
-	})
-	return candidates[0].versionRange(), true
+	// No candidate contains the running version. Report bounds only from a
+	// candidate on the running version's own branch; a different branch's
+	// fixed-in would be misleading, so absent a same-branch candidate report
+	// nothing (matched=false) — the running branch was simply never affected.
+	if rb := branchOf(running); rb != "" {
+		for _, m := range candidates {
+			if m.branch() == rb {
+				return m.versionRange(), true
+			}
+		}
+	}
+	return versionRange{}, false
 }
 
-// lessFixed orders two versionEndExcluding values ascending, with an empty value
-// (open-ended, no known fix) sorting after any concrete version.
-func lessFixed(a, b string) bool {
-	if a == "" {
-		return false
+// branchOf returns the FortiOS <major>.<minor> series of a version string ("" if
+// unparseable), e.g. "7.4" for "v7.4.12".
+func branchOf(v string) string {
+	_, mm := version.SupportsVersion(v)
+	return mm
+}
+
+// branch derives this cpeMatch's FortiOS branch (<major>.<minor>) from the first
+// populated version field, falling back to the exact pinned CPE version.
+func (m nvdCPEMatch) branch() string {
+	for _, v := range []string{
+		m.VersionStartIncluding, m.VersionStartExcluding,
+		m.VersionEndExcluding, m.VersionEndIncluding,
+		cpeExactVersion(m.Criteria),
+	} {
+		if v == "" {
+			continue
+		}
+		if b := branchOf(v); b != "" {
+			return b
+		}
 	}
-	if b == "" {
-		return true
-	}
-	return version.Compare(a, b) < 0
+	return ""
 }
 
 // cpeExactVersion extracts the version field (component index 5) of a CPE 2.3

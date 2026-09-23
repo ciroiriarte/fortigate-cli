@@ -140,9 +140,10 @@ func TestHealthReportCriticalSensor(t *testing.T) {
 }
 
 // TestHealthAdminUpLinkDown asserts the flagship check fires: a cmdb admin-up
-// interface whose monitor link is down grades CRITICAL, while an admin-down
-// interface with link down does not fail (stays N/A). Admin status is sourced
-// from the cmdb system/interface object.
+// interface whose monitor link is down grades WARN (FortiOS leaves unused ports
+// admin-enabled, so this is common alarm-fatigue, not critical), while an
+// admin-down interface with link down does not fail (stays N/A). Admin status is
+// sourced from the cmdb system/interface object.
 func TestHealthAdminUpLinkDown(t *testing.T) {
 	f := &healthFake{
 		status: domain.DeviceStatus{Model: "FG100F"},
@@ -151,7 +152,7 @@ func TestHealthAdminUpLinkDown(t *testing.T) {
 			{Name: "port2", Status: "down"}, // link down
 		},
 		cmdbIfaces: []provider.Object{
-			{"name": "port1", "status": "up"},   // admin up  => admin-up + link-down => CRITICAL
+			{"name": "port1", "status": "up"},   // admin up  => admin-up + link-down => WARN
 			{"name": "port2", "status": "down"}, // admin down => not a fault
 		},
 	}
@@ -165,14 +166,14 @@ func TestHealthAdminUpLinkDown(t *testing.T) {
 			got[fd.Subject] = fd.Severity
 		}
 	}
-	if got["port1"] != health.Critical {
-		t.Errorf("port1 (admin-up, link-down) = %s, want CRITICAL", got["port1"])
+	if got["port1"] != health.Warn {
+		t.Errorf("port1 (admin-up, link-down) = %s, want WARN", got["port1"])
 	}
 	if got["port2"] == health.Critical || got["port2"] == health.Warn {
 		t.Errorf("port2 (admin-down, link-down) = %s, want a non-failing verdict", got["port2"])
 	}
-	if report.Overall != health.Critical {
-		t.Errorf("overall = %s, want CRITICAL", report.Overall)
+	if report.Overall != health.Warn {
+		t.Errorf("overall = %s, want WARN", report.Overall)
 	}
 }
 

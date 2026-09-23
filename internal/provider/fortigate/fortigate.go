@@ -60,6 +60,14 @@ func (f *fortiGate) ListInterfaces(ctx context.Context) ([]domain.Interface, err
 		if n == "" {
 			n = name
 		}
+		// Speed/duplex are only meaningful on an UP link. FortiOS reports
+		// speed:0, duplex:0 for DOWN ports, which would otherwise render as a
+		// bogus "0"/"half"; leave both empty ("n/a") for a down link.
+		var speed, duplex string
+		if v.Link {
+			speed = scalarString(v.Speed)
+			duplex = duplexString(v.Duplex)
+		}
 		out = append(out, domain.Interface{
 			Name:   n,
 			Type:   v.Type,
@@ -67,8 +75,8 @@ func (f *fortiGate) ListInterfaces(ctx context.Context) ([]domain.Interface, err
 			Status: status,
 			VDOM:   v.VDOM,
 			Alias:  v.Alias,
-			Speed:  scalarString(v.Speed),
-			Duplex: duplexString(v.Duplex),
+			Speed:  speed,
+			Duplex: duplex,
 		})
 	}
 	return out, nil

@@ -113,14 +113,15 @@ func TestNVDByIDRangeBoundaries(t *testing.T) {
 	n := nvdTestServer(t, nvdPayload, http.StatusOK)
 	// CVE-2024-1111 range is [7.4.0, 7.4.4).
 	cases := []struct {
-		version string
-		want    bool
+		version   string
+		want      bool
+		wantFixed string
 	}{
-		{"7.4.0", true},  // versionStartIncluding is inclusive
-		{"7.4.3", true},  // inside range
-		{"7.4.4", false}, // versionEndExcluding is exclusive
-		{"7.4.5", false}, // above range
-		{"7.3.9", false}, // below versionStartIncluding
+		{"7.4.0", true, "7.4.4"},  // versionStartIncluding is inclusive
+		{"7.4.3", true, "7.4.4"},  // inside range
+		{"7.4.4", false, "7.4.4"}, // versionEndExcluding is exclusive (same branch => bounds reported)
+		{"7.4.5", false, "7.4.4"}, // above range but same 7.4 branch => bounds reported
+		{"7.3.9", false, ""},      // different branch (7.3) => never affected, no bounds reported
 	}
 	for _, c := range cases {
 		got, err := n.ByID(context.Background(), "CVE-2024-1111", c.version)
@@ -130,8 +131,8 @@ func TestNVDByIDRangeBoundaries(t *testing.T) {
 		if got.Affected != c.want {
 			t.Errorf("CVE-2024-1111 @ %s Affected = %v, want %v", c.version, got.Affected, c.want)
 		}
-		if got.FixedIn != "7.4.4" {
-			t.Errorf("CVE-2024-1111 @ %s FixedIn = %q, want 7.4.4", c.version, got.FixedIn)
+		if got.FixedIn != c.wantFixed {
+			t.Errorf("CVE-2024-1111 @ %s FixedIn = %q, want %q", c.version, got.FixedIn, c.wantFixed)
 		}
 	}
 }
@@ -187,13 +188,14 @@ func TestNVDByIDEndIncludingBoundary(t *testing.T) {
 	n := nvdTestServer(t, nvdEndIncludingPayload, http.StatusOK)
 	// Range is [7.2.0, 7.2.5] inclusive on both ends.
 	cases := []struct {
-		version string
-		want    bool
+		version        string
+		want           bool
+		wantIntroduced string
 	}{
-		{"7.2.0", true},  // startIncluding inclusive
-		{"7.2.5", true},  // endIncluding is inclusive
-		{"7.2.6", false}, // just above the inclusive end
-		{"7.3.0", false},
+		{"7.2.0", true, "7.2.0"},  // startIncluding inclusive
+		{"7.2.5", true, "7.2.0"},  // endIncluding is inclusive
+		{"7.2.6", false, "7.2.0"}, // just above the inclusive end, same 7.2 branch
+		{"7.3.0", false, ""},      // different branch (7.3) => never affected, no bounds
 	}
 	for _, c := range cases {
 		got, err := n.ByID(context.Background(), "CVE-2022-3333", c.version)
@@ -204,12 +206,71 @@ func TestNVDByIDEndIncludingBoundary(t *testing.T) {
 			t.Errorf("CVE-2022-3333 @ %s Affected = %v, want %v", c.version, got.Affected, c.want)
 		}
 		// An inclusive upper bound is not a clean fixed version, so FixedIn stays
-		// empty (never a wrong value) while IntroducedIn is still reported.
+		// empty (never a wrong value) while IntroducedIn is reported for a
+		// same-branch box.
 		if got.FixedIn != "" {
 			t.Errorf("versionEndIncluding must not set FixedIn, got %q", got.FixedIn)
 		}
-		if got.IntroducedIn != "7.2.0" {
-			t.Errorf("IntroducedIn = %q, want 7.2.0", got.IntroducedIn)
+		if got.IntroducedIn != c.wantIntroduced {
+			t.Errorf("CVE-2022-3333 @ %s IntroducedIn = %q, want %q", c.version, got.IntroducedIn, c.wantIntroduced)
+		}
+	}
+}
+
+// nvdMultiBranchPayload has one CVE with two FortiOS branch ranges: 6.0.0-6.0.18
+// and 7.4.0-7.4.3. It exercises the branch-aware fixed-in selection.
+const nvdMultiBranchPayload = `{
+  "vulnerabilities": [
+    {
+      "cve": {
+        "id": "CVE-2024-21762",
+        "published": "2024-02-08T10:00:00.000",
+        "lastModified": "2024-03-01T10:00:00.000",
+        "descriptions": [{"lang": "en", "value": "Multi-branch FortiOS flaw."}],
+        "metrics": {
+          "cvssMetricV31": [
+            {"cvssData": {"baseScore": 9.8, "baseSeverity": "CRITICAL", "vectorString": "CVSS:3.1/AV:N"}}
+          ]
+        },
+        "configurations": [
+          {"nodes": [
+            {"cpeMatch": [
+              {"criteria": "cpe:2.3:o:fortinet:fortios:*:*:*:*:*:*:*:*", "vulnerable": true,
+               "versionStartIncluding": "6.0.0", "versionEndExcluding": "6.0.18"},
+              {"criteria": "cpe:2.3:o:fortinet:fortios:*:*:*:*:*:*:*:*", "vulnerable": true,
+               "versionStartIncluding": "7.4.0", "versionEndExcluding": "7.4.3"}
+            ]}
+          ]}
+        ]
+      }
+    }
+  ]
+}`
+
+// TestNVDByIDMultiBranchFixedIn asserts the branch-aware fallback: a box reports
+// the fixed-in of ITS OWN branch (not the lowest across all branches), and a box
+// on a branch the CVE never covered reports affected=no with empty bounds.
+func TestNVDByIDMultiBranchFixedIn(t *testing.T) {
+	n := nvdTestServer(t, nvdMultiBranchPayload, http.StatusOK)
+	cases := []struct {
+		version   string
+		want      bool
+		wantFixed string
+	}{
+		{"7.4.12", false, "7.4.3"}, // above 7.4 range but same branch => 7.4-branch fixed-in
+		{"7.4.1", true, "7.4.3"},   // inside 7.4 range => affected, 7.4-branch fixed-in
+		{"8.0.0", false, ""},       // branch never covered => not affected, no bounds
+	}
+	for _, c := range cases {
+		got, err := n.ByID(context.Background(), "CVE-2024-21762", c.version)
+		if err != nil {
+			t.Fatalf("ByID(%s): %v", c.version, err)
+		}
+		if got.Affected != c.want {
+			t.Errorf("CVE-2024-21762 @ %s Affected = %v, want %v", c.version, got.Affected, c.want)
+		}
+		if got.FixedIn != c.wantFixed {
+			t.Errorf("CVE-2024-21762 @ %s FixedIn = %q, want %q", c.version, got.FixedIn, c.wantFixed)
 		}
 	}
 }

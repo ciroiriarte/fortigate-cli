@@ -138,10 +138,17 @@ func TestInterfaceGrading(t *testing.T) {
 	if got := findingFor(t, fs, "speed").Severity; got != Warn {
 		t.Errorf("slow link = %s, want WARN", got)
 	}
-	// admin up + link down → CRITICAL
+	// admin up + link down → WARN (FortiOS leaves unused ports admin-up; not critical)
 	fs = GradeInterface(InterfaceFact{Name: "p3", AdminUp: bptr(true), LinkUp: bptr(false)}, 0)
-	if got := findingFor(t, fs, "link").Severity; got != Critical {
-		t.Errorf("admin-up link-down = %s, want CRITICAL", got)
+	if got := findingFor(t, fs, "link").Severity; got != Warn {
+		t.Errorf("admin-up link-down = %s, want WARN", got)
+	}
+	// down link must never produce a duplex finding, even if duplex reads "half"
+	fs = GradeInterface(InterfaceFact{Name: "p3b", AdminUp: bptr(true), LinkUp: bptr(false), Duplex: "half"}, 0)
+	for _, f := range fs {
+		if f.Code == "interface.duplex" {
+			t.Errorf("down link produced a duplex finding: %+v", f)
+		}
 	}
 	// link up, nothing wrong → PASS
 	fs = GradeInterface(InterfaceFact{Name: "p4", LinkUp: bptr(true), SpeedMbps: fptr(1000)}, 1000)
