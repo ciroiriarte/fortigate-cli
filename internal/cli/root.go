@@ -156,6 +156,7 @@ func NewRootCmd() *cobra.Command {
 		newSystemCmd(a),
 		newFirewallCmd(a),
 		newRouterCmd(a),
+		newVpnCmd(a),
 		newSwitchCmd(a),
 		newAPICmd(a),
 		newConfigCmd(a),
