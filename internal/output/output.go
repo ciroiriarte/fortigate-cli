@@ -9,6 +9,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"gopkg.in/yaml.v3"
 )
@@ -52,10 +53,11 @@ type Tabular struct {
 
 // Options controls rendering.
 type Options struct {
-	Format    Format
-	Columns   []string // subset/order of columns (case-insensitive); empty = all
-	NoHeaders bool
-	SortBy    string // column name, optional ":asc"/":desc" suffix
+	Format      Format
+	Columns     []string // subset/order of columns (case-insensitive); empty = all
+	NoHeaders   bool
+	SortBy      string // column name, optional ":asc"/":desc" suffix
+	MaxColWidth int    // table only: truncate cells wider than this with "…" (0 = no limit)
 }
 
 // Render writes t to w according to opts.
@@ -75,7 +77,7 @@ func Render(w io.Writer, t Tabular, opts Options) error {
 	case Value:
 		return writeValue(w, view)
 	case Table, "":
-		return writeTable(w, view, opts.NoHeaders)
+		return writeTable(w, view, opts.NoHeaders, opts.MaxColWidth)
 	default:
 		return fmt.Errorf("unsupported format %q", opts.Format)
 	}
@@ -179,25 +181,53 @@ func writeValue(w io.Writer, t Tabular) error {
 	return nil
 }
 
-func writeTable(w io.Writer, t Tabular, noHeaders bool) error {
-	widths := make([]int, len(t.Columns))
-	for i, c := range t.Columns {
-		widths[i] = len(c)
+func writeTable(w io.Writer, t Tabular, noHeaders bool, maxColWidth int) error {
+	header := upper(t.Columns)
+	rows := t.Rows
+	if maxColWidth > 0 {
+		header = truncateCells(header, maxColWidth)
+		rows = make([][]string, len(t.Rows))
+		for i, r := range t.Rows {
+			rows[i] = truncateCells(r, maxColWidth)
+		}
 	}
-	for _, r := range t.Rows {
+	widths := make([]int, len(t.Columns))
+	if !noHeaders {
+		for i, c := range header {
+			widths[i] = dispWidth(c)
+		}
+	}
+	for _, r := range rows {
 		for i, cell := range r {
-			if i < len(widths) && len(cell) > widths[i] {
-				widths[i] = len(cell)
+			if i < len(widths) && dispWidth(cell) > widths[i] {
+				widths[i] = dispWidth(cell)
 			}
 		}
 	}
 	if !noHeaders {
-		writeRow(w, upper(t.Columns), widths)
+		writeRow(w, header, widths)
 	}
-	for _, r := range t.Rows {
+	for _, r := range rows {
 		writeRow(w, r, widths)
 	}
 	return nil
+}
+
+// dispWidth is a cell's display width in columns. Cells are near-always ASCII,
+// so rune count is the right measure (and keeps a multibyte "…" aligned).
+func dispWidth(s string) int { return utf8.RuneCountInString(s) }
+
+// truncateCells shortens any cell wider than max to (max-1) runes plus "…".
+func truncateCells(cells []string, max int) []string {
+	out := make([]string, len(cells))
+	for i, c := range cells {
+		if max > 1 && dispWidth(c) > max {
+			out[i] = string([]rune(c)[:max-1]) + "…"
+		} else {
+			out[i] = c
+		}
+	}
+	return out
 }
 
 func writeRow(w io.Writer, cells []string, widths []int) {
@@ -208,7 +238,7 @@ func writeRow(w io.Writer, cells []string, widths []int) {
 		}
 		b.WriteString(cell)
 		if i < len(cells)-1 && i < len(widths) {
-			for pad := len(cell); pad < widths[i]; pad++ {
+			for pad := dispWidth(cell); pad < widths[i]; pad++ {
 				b.WriteByte(' ')
 			}
 		}

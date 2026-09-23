@@ -364,7 +364,7 @@ func cellValue(v any) string {
 // child-tables by "name" for most objects, but by "range" (VIP mappedip),
 // "subnet" (policy src/dst), or "interface-name" (aggregate members) elsewhere.
 func childCellValue(m map[string]any) string {
-	for _, k := range []string{"name", "range", "subnet", "interface-name"} {
+	for _, k := range []string{"name", "range", "subnet", "interface-name", "seq-num"} {
 		if v, ok := m[k]; ok {
 			return cellValue(v)
 		}

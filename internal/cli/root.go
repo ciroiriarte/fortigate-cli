@@ -27,6 +27,7 @@ type app struct {
 	format      string
 	columns     []string
 	noHeaders   bool
+	wide        bool
 	sortBy      string
 	insecure    bool
 	fingerprint string
@@ -95,11 +96,19 @@ func (a *app) outputOptions() (output.Options, error) {
 	if err != nil {
 		return output.Options{}, err
 	}
+	// Cap table columns by default so a single wide field (e.g. a policy's
+	// address list) can't blow out the layout; --wide restores full width.
+	// json/yaml/csv are never truncated.
+	maxCol := 40
+	if a.wide {
+		maxCol = 0
+	}
 	return output.Options{
-		Format:    f,
-		Columns:   a.columns,
-		NoHeaders: a.noHeaders,
-		SortBy:    a.sortBy,
+		Format:      f,
+		Columns:     a.columns,
+		NoHeaders:   a.noHeaders,
+		SortBy:      a.sortBy,
+		MaxColWidth: maxCol,
 	}, nil
 }
 
@@ -146,6 +155,7 @@ func NewRootCmd() *cobra.Command {
 	pf.StringVarP(&a.format, "format", "o", "", "output format: table|json|yaml|csv|value")
 	pf.StringArrayVarP(&a.columns, "column", "c", nil, "select/order output columns (repeatable)")
 	pf.BoolVar(&a.noHeaders, "no-headers", false, "omit table/csv headers")
+	pf.BoolVar(&a.wide, "wide", false, "do not truncate wide table columns")
 	pf.StringVar(&a.sortBy, "sort", "", "sort by column (NAME[:asc|desc])")
 	pf.BoolVar(&a.insecure, "insecure", false, "skip TLS verification (footgun)")
 	pf.StringVar(&a.fingerprint, "tls-fingerprint", "", "pin the server cert SHA-256 fingerprint")
