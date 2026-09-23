@@ -23,6 +23,10 @@ type SessionProvider struct {
 	base     *url.URL
 	csrf     string
 	loggedIn bool
+	// loginErr caches a failed login so a retrying caller never re-POSTs
+	// /logincheck within one invocation — repeated failed logins would trip
+	// FortiOS admin-lockout. Cleared by Refresh.
+	loginErr error
 }
 
 // NewSession builds a SessionProvider, validating inputs.
@@ -68,10 +72,15 @@ func (s *SessionProvider) Apply(req *http.Request, write bool) error {
 	return nil
 }
 
-// Refresh forces a re-login (e.g. after the session expires).
+// Refresh clears the cached session (and any cached login failure) and logs in
+// again — for callers that recover from session expiry. The per-invocation CLI
+// logs in lazily on the first request and rarely lives long enough to expire, so
+// the transport does not currently call this; it exists for that future path and
+// for programmatic callers.
 func (s *SessionProvider) Refresh(ctx context.Context) error {
 	s.mu.Lock()
 	s.loggedIn = false
+	s.loginErr = nil
 	s.mu.Unlock()
 	return s.ensureLogin(ctx)
 }
@@ -84,6 +93,11 @@ func (s *SessionProvider) ensureLogin(ctx context.Context) error {
 	defer s.mu.Unlock()
 	if s.loggedIn {
 		return nil
+	}
+	// A prior login already failed this invocation; do not hammer /logincheck
+	// (FortiOS admin-lockout). Return the same error to every retry.
+	if s.loginErr != nil {
+		return s.loginErr
 	}
 	if s.hc == nil || s.base == nil {
 		return fmt.Errorf("session auth: transport not bound")
@@ -100,17 +114,19 @@ func (s *SessionProvider) ensureLogin(ctx context.Context) error {
 
 	resp, err := s.hc.Do(req)
 	if err != nil {
-		return fmt.Errorf("session login: %w", err)
+		s.loginErr = fmt.Errorf("session login: %w", err)
+		return s.loginErr
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 
 	// The authoritative success signal is the ccsrftoken cookie FortiOS sets on a
 	// valid login; a failed login returns the same 200 but no session cookie.
 	csrf := s.extractCSRF()
 	if csrf == "" {
-		return fmt.Errorf("session login failed for user %q (check username/password and admin trusted hosts); server said: %s",
+		s.loginErr = fmt.Errorf("session login failed for user %q (check username/password and admin trusted hosts); server said: %q",
 			s.User, strings.TrimSpace(string(body)))
+		return s.loginErr
 	}
 	s.csrf = csrf
 	s.loggedIn = true

@@ -96,10 +96,12 @@ func Resolve(f *File, ov Overrides) (*Settings, error) {
 	s.Server = firstNonEmpty(os.Getenv("FGT_CLI_SERVER"), s.Server)
 	s.VDOM = firstNonEmpty(os.Getenv("FGT_CLI_VDOM"), s.VDOM)
 	s.User = firstNonEmpty(os.Getenv("FGT_CLI_USER"), s.User)
-	if v := os.Getenv("FGT_CLI_TOKEN"); v != "" {
+	// Each secret source is gated on the auth type so a stray FGT_CLI_PASSWORD
+	// can't silently overwrite a token (or vice-versa).
+	if v := os.Getenv("FGT_CLI_TOKEN"); v != "" && s.AuthType != "session" {
 		s.Secret = v
 	}
-	if v := os.Getenv("FGT_CLI_PASSWORD"); v != "" {
+	if v := os.Getenv("FGT_CLI_PASSWORD"); v != "" && s.AuthType == "session" {
 		s.Secret = v
 	}
 	s.TLSFinger = firstNonEmpty(os.Getenv("FGT_CLI_TLS_FINGERPRINT"), s.TLSFinger)
@@ -114,11 +116,13 @@ func Resolve(f *File, ov Overrides) (*Settings, error) {
 	s.Server = firstNonEmpty(ov.Server, s.Server)
 	s.VDOM = firstNonEmpty(ov.VDOM, s.VDOM)
 	s.User = firstNonEmpty(ov.User, s.User)
-	if ov.TokenSecret != "" {
+	if ov.TokenSecret != "" && s.AuthType != "session" {
 		s.Secret = ov.TokenSecret
+		fmt.Fprintln(os.Stderr, "[fgt] warning: --token exposes the secret in ps/shell history; prefer a secret_ref or FGT_CLI_TOKEN")
 	}
-	if ov.Password != "" {
+	if ov.Password != "" && s.AuthType == "session" {
 		s.Secret = ov.Password
+		fmt.Fprintln(os.Stderr, "[fgt] warning: --password exposes the secret in ps/shell history; prefer a secret_ref or FGT_CLI_PASSWORD")
 	}
 	s.TLSFinger = firstNonEmpty(ov.Fingerprint, s.TLSFinger)
 	s.Output = firstNonEmpty(ov.Output, s.Output)

@@ -73,18 +73,27 @@ func TestSessionAuthFlow(t *testing.T) {
 	}
 }
 
-// TestSessionLoginFailure asserts a login that yields no session cookie fails
-// with a clear message (POST avoids idempotent retries so it fails fast).
-func TestSessionLoginFailure(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+// TestSessionLoginFailureHitsLogincheckOnce is the admin-lockout guard: a bad
+// password on an idempotent GET (which the transport would otherwise retry up to
+// 4×) must POST /logincheck exactly once and fail terminally — never hammer the
+// login endpoint into a lockout.
+func TestSessionLoginFailureHitsLogincheckOnce(t *testing.T) {
+	var loginHits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/logincheck" {
+			loginHits++
+		}
 		w.Write([]byte("0")) // FortiOS failure code, no session cookie set
 	}))
 	defer srv.Close()
 
 	sp, _ := auth.NewSession("admin", "wrong")
 	c, _ := New(Options{BaseURL: srv.URL, Auth: sp})
-	_, err := c.DoRaw(context.Background(), &Request{Method: "POST", Path: "cmdb/x", Body: []byte("{}")})
+	_, err := c.DoRaw(context.Background(), &Request{Method: "GET", Path: "cmdb/firewall/address"})
 	if err == nil || !strings.Contains(err.Error(), "session login failed") {
 		t.Fatalf("want session-login-failed error, got %v", err)
+	}
+	if loginHits != 1 {
+		t.Errorf("/logincheck hit %d times on a failed GET, want exactly 1 (admin-lockout hazard)", loginHits)
 	}
 }

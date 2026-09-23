@@ -6,6 +6,7 @@ package transport
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -175,6 +176,13 @@ func (c *Client) doRaw(ctx context.Context, req *Request) ([]byte, error) {
 
 		body, status, transErr := c.attempt(ctx, req)
 		if transErr != nil {
+			// Authentication failures are terminal: retrying re-runs the auth
+			// step (for session auth, another /logincheck), which risks admin
+			// lockout. Everything else is a genuine transport hiccup — retry.
+			var ae *authApplyError
+			if errors.As(transErr, &ae) {
+				return nil, &protocol.APIError{Kind: protocol.KindTransport, Message: ae.Error()}
+			}
 			lastErr = &protocol.APIError{Kind: protocol.KindTransport, Message: transErr.Error()}
 			continue // transport errors are always retryable for idempotent reqs
 		}
@@ -222,7 +230,7 @@ func (c *Client) attempt(ctx context.Context, req *Request) (body []byte, status
 	}
 	if c.auth != nil {
 		if err := c.auth.Apply(httpReq, !isIdempotent(req.Method)); err != nil {
-			return nil, 0, fmt.Errorf("apply auth: %w", err)
+			return nil, 0, &authApplyError{err: err}
 		}
 	}
 
@@ -265,6 +273,13 @@ func isLoopbackHost(host string) bool {
 	}
 	return false
 }
+
+// authApplyError wraps a failure from auth.Provider.Apply so the retry loop can
+// treat it as terminal rather than a retryable transport error.
+type authApplyError struct{ err error }
+
+func (e *authApplyError) Error() string { return "apply auth: " + e.err.Error() }
+func (e *authApplyError) Unwrap() error { return e.err }
 
 func isIdempotent(method string) bool {
 	switch strings.ToUpper(method) {
