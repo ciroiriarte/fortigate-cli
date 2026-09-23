@@ -1,0 +1,94 @@
+.nh
+.TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
+
+.SH NAME
+fgt-schema - Show a cmdb object's field schema for the target build (M5 scaffolding)
+
+
+.SH SYNOPSIS
+\fBfgt schema  [flags]\fP
+
+
+.SH DESCRIPTION
+Fetch the per-build field schema FortiOS describes about a cmdb object
+(GET cmdb/?action=schema). --gen emits a resource{} declaration
+skeleton to scaffold a curated command. Example paths: firewall/address,
+vpn.ssl/settings, system/sdwan/members.
+
+
+.SH OPTIONS
+\fB--gen\fP[=false]
+	emit a resource{} declaration skeleton instead of the field table
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for schema
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB-c\fP, \fB--column\fP=[]
+	select/order output columns (repeatable)
+
+.PP
+\fB--context\fP=""
+	config context to use
+
+.PP
+\fB--debug\fP[=false]
+	log request/response metadata to stderr
+
+.PP
+\fB-o\fP, \fB--format\fP=""
+	output format: table|json|yaml|csv|value
+
+.PP
+\fB--insecure\fP[=false]
+	skip TLS verification (footgun)
+
+.PP
+\fB--no-headers\fP[=false]
+	omit table/csv headers
+
+.PP
+\fB--password\fP=""
+	admin password for session auth (prefer a secret_ref or FGT_CLI_PASSWORD)
+
+.PP
+\fB--profile\fP=""
+	config profile to use
+
+.PP
+\fB--server\fP=""
+	FortiGate API base URL (e.g. https://fw.example.com)
+
+.PP
+\fB--sort\fP=""
+	sort by column (NAME[:asc|desc])
+
+.PP
+\fB--tls-fingerprint\fP=""
+	pin the server cert SHA-256 fingerprint
+
+.PP
+\fB--token\fP=""
+	REST API token (prefer a config secret_ref or FGT_CLI_TOKEN)
+
+.PP
+\fB--user\fP=""
+	admin username for session auth (or FGT_CLI_USER)
+
+.PP
+\fB--vdom\fP=""
+	target VDOM (default: device global/root)
+
+.PP
+\fB--wide\fP[=false]
+	do not truncate wide table columns
+
+.PP
+\fB-y\fP, \fB--yes\fP[=false]
+	assume yes for destructive confirmations
+
+
+.SH SEE ALSO
+\fBfgt(1)\fP

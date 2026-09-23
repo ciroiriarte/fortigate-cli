@@ -1,0 +1,91 @@
+.nh
+.TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
+
+.SH NAME
+fgt - Remote CLI for FortiGate / FortiOS (and FortiLink-managed FortiSwitch)
+
+
+.SH SYNOPSIS
+\fBfgt [flags]\fP
+
+
+.SH DESCRIPTION
+fgt is a remote-first, OpenStack-Client-inspired CLI for managing FortiGate
+firewalls entirely over the FortiOS REST API (/api/v2/cmdb for config,
+/api/v2/monitor for status). Nothing is installed on the device.
+
+.PP
+fortigate-cli is an unofficial, community tool and is not affiliated with, authorized, or endorsed by Fortinet, Inc. FortiGate, FortiOS, and FortiSwitch are trademarks of Fortinet, Inc.
+
+
+.SH OPTIONS
+\fB-c\fP, \fB--column\fP=[]
+	select/order output columns (repeatable)
+
+.PP
+\fB--context\fP=""
+	config context to use
+
+.PP
+\fB--debug\fP[=false]
+	log request/response metadata to stderr
+
+.PP
+\fB-o\fP, \fB--format\fP=""
+	output format: table|json|yaml|csv|value
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for fgt
+
+.PP
+\fB--insecure\fP[=false]
+	skip TLS verification (footgun)
+
+.PP
+\fB--no-headers\fP[=false]
+	omit table/csv headers
+
+.PP
+\fB--password\fP=""
+	admin password for session auth (prefer a secret_ref or FGT_CLI_PASSWORD)
+
+.PP
+\fB--profile\fP=""
+	config profile to use
+
+.PP
+\fB--server\fP=""
+	FortiGate API base URL (e.g. https://fw.example.com)
+
+.PP
+\fB--sort\fP=""
+	sort by column (NAME[:asc|desc])
+
+.PP
+\fB--tls-fingerprint\fP=""
+	pin the server cert SHA-256 fingerprint
+
+.PP
+\fB--token\fP=""
+	REST API token (prefer a config secret_ref or FGT_CLI_TOKEN)
+
+.PP
+\fB--user\fP=""
+	admin username for session auth (or FGT_CLI_USER)
+
+.PP
+\fB--vdom\fP=""
+	target VDOM (default: device global/root)
+
+.PP
+\fB--wide\fP[=false]
+	do not truncate wide table columns
+
+.PP
+\fB-y\fP, \fB--yes\fP[=false]
+	assume yes for destructive confirmations
+
+
+.SH SEE ALSO
+\fBfgt-api(1)\fP, \fBfgt-config(1)\fP, \fBfgt-firewall(1)\fP, \fBfgt-log(1)\fP, \fBfgt-router(1)\fP, \fBfgt-schema(1)\fP, \fBfgt-sdwan(1)\fP, \fBfgt-switch(1)\fP, \fBfgt-system(1)\fP, \fBfgt-user(1)\fP, \fBfgt-version(1)\fP, \fBfgt-vpn(1)\fP

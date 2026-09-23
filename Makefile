@@ -11,7 +11,7 @@ LDFLAGS   := -s -w \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
 	-X $(PKG)/internal/version.Date=$(DATE)
 
-.PHONY: all build test vet fmt fmtcheck check tidy clean run
+.PHONY: all build test vet fmt fmtcheck check tidy clean run docs
 
 all: build
 
@@ -39,6 +39,11 @@ fmtcheck:
 
 tidy:
 	$(GO) mod tidy
+
+# Regenerate man pages (docs/man/) and shell completions (contrib/completions/)
+# from the cobra command tree. Committed, so packagers need no Go toolchain.
+docs:
+	$(GO) run ./tools/gen-docs
 
 clean:
 	rm -f $(BINARY)

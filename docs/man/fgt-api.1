@@ -1,0 +1,113 @@
+.nh
+.TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
+
+.SH NAME
+fgt-api - Make a raw authenticated API call (escape hatch)
+
+
+.SH SYNOPSIS
+\fBfgt api   [flags]\fP
+
+
+.SH DESCRIPTION
+Issue an arbitrary call against the FortiOS REST API, handling auth, base
+URL, TLS and VDOM for you. The path is relative to /api/v2/, so use
+cmdb/... for configuration and monitor/... for status. Use this for
+endpoints the curated commands don't cover yet — every endpoint is reachable.
+
+.PP
+For a mutating method (POST/PUT/DELETE) you are prompted to confirm first
+(pass --yes to skip). Write bodies are JSON: pass --body '\&' / --body
+@file.json, or build a flat object with repeated --data key=value.
+
+
+.SH OPTIONS
+\fB--body\fP=""
+	raw JSON request body, or @file.json
+
+.PP
+\fB-d\fP, \fB--data\fP=[]
+	request parameter key=value (repeatable)
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for api
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB-c\fP, \fB--column\fP=[]
+	select/order output columns (repeatable)
+
+.PP
+\fB--context\fP=""
+	config context to use
+
+.PP
+\fB--debug\fP[=false]
+	log request/response metadata to stderr
+
+.PP
+\fB-o\fP, \fB--format\fP=""
+	output format: table|json|yaml|csv|value
+
+.PP
+\fB--insecure\fP[=false]
+	skip TLS verification (footgun)
+
+.PP
+\fB--no-headers\fP[=false]
+	omit table/csv headers
+
+.PP
+\fB--password\fP=""
+	admin password for session auth (prefer a secret_ref or FGT_CLI_PASSWORD)
+
+.PP
+\fB--profile\fP=""
+	config profile to use
+
+.PP
+\fB--server\fP=""
+	FortiGate API base URL (e.g. https://fw.example.com)
+
+.PP
+\fB--sort\fP=""
+	sort by column (NAME[:asc|desc])
+
+.PP
+\fB--tls-fingerprint\fP=""
+	pin the server cert SHA-256 fingerprint
+
+.PP
+\fB--token\fP=""
+	REST API token (prefer a config secret_ref or FGT_CLI_TOKEN)
+
+.PP
+\fB--user\fP=""
+	admin username for session auth (or FGT_CLI_USER)
+
+.PP
+\fB--vdom\fP=""
+	target VDOM (default: device global/root)
+
+.PP
+\fB--wide\fP[=false]
+	do not truncate wide table columns
+
+.PP
+\fB-y\fP, \fB--yes\fP[=false]
+	assume yes for destructive confirmations
+
+
+.SH EXAMPLE
+.EX
+  fgt api GET cmdb/firewall/address
+  fgt api GET monitor/system/interface
+  fgt api POST cmdb/firewall/address --data name=web --data subnet="10.0.0.0 255.255.255.0"
+  fgt api PUT cmdb/firewall/address/web --body '{"comment":"updated"}'
+  fgt api DELETE cmdb/firewall/address/web
+.EE
+
+
+.SH SEE ALSO
+\fBfgt(1)\fP

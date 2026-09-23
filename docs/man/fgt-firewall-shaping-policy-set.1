@@ -1,0 +1,127 @@
+.nh
+.TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
+
+.SH NAME
+fgt-firewall-shaping-policy-set - Update fields on a shaping-policy object
+
+
+.SH SYNOPSIS
+\fBfgt firewall shaping-policy set  [flags]\fP
+
+
+.SH DESCRIPTION
+Update fields on a shaping-policy object
+
+
+.SH OPTIONS
+\fB--dstaddr\fP=""
+	destination address(es), comma-separated
+
+.PP
+\fB--dstintf\fP=""
+	destination interface(s)/zone(s), comma-separated
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for set
+
+.PP
+\fB--per-ip-shaper\fP=""
+	per-IP traffic shaper name
+
+.PP
+\fB--service\fP=""
+	service(s), comma-separated
+
+.PP
+\fB--set\fP=[]
+	set an arbitrary field: --set key=value (repeatable; value may be a,b for ref lists)
+
+.PP
+\fB--srcaddr\fP=""
+	source address(es), comma-separated
+
+.PP
+\fB--srcintf\fP=""
+	source interface(s)/zone(s), comma-separated
+
+.PP
+\fB--status\fP=""
+	enable|disable
+
+.PP
+\fB--traffic-shaper\fP=""
+	forward traffic shaper name
+
+.PP
+\fB--traffic-shaper-reverse\fP=""
+	reverse traffic shaper name
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB-c\fP, \fB--column\fP=[]
+	select/order output columns (repeatable)
+
+.PP
+\fB--context\fP=""
+	config context to use
+
+.PP
+\fB--debug\fP[=false]
+	log request/response metadata to stderr
+
+.PP
+\fB-o\fP, \fB--format\fP=""
+	output format: table|json|yaml|csv|value
+
+.PP
+\fB--insecure\fP[=false]
+	skip TLS verification (footgun)
+
+.PP
+\fB--no-headers\fP[=false]
+	omit table/csv headers
+
+.PP
+\fB--password\fP=""
+	admin password for session auth (prefer a secret_ref or FGT_CLI_PASSWORD)
+
+.PP
+\fB--profile\fP=""
+	config profile to use
+
+.PP
+\fB--server\fP=""
+	FortiGate API base URL (e.g. https://fw.example.com)
+
+.PP
+\fB--sort\fP=""
+	sort by column (NAME[:asc|desc])
+
+.PP
+\fB--tls-fingerprint\fP=""
+	pin the server cert SHA-256 fingerprint
+
+.PP
+\fB--token\fP=""
+	REST API token (prefer a config secret_ref or FGT_CLI_TOKEN)
+
+.PP
+\fB--user\fP=""
+	admin username for session auth (or FGT_CLI_USER)
+
+.PP
+\fB--vdom\fP=""
+	target VDOM (default: device global/root)
+
+.PP
+\fB--wide\fP[=false]
+	do not truncate wide table columns
+
+.PP
+\fB-y\fP, \fB--yes\fP[=false]
+	assume yes for destructive confirmations
+
+
+.SH SEE ALSO
+\fBfgt-firewall-shaping-policy(1)\fP

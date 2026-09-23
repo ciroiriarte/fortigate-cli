@@ -1,0 +1,127 @@
+.nh
+.TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
+
+.SH NAME
+fgt-user-ldap-set - Update fields on a ldap object
+
+
+.SH SYNOPSIS
+\fBfgt user ldap set  [flags]\fP
+
+
+.SH DESCRIPTION
+Update fields on a ldap object
+
+
+.SH OPTIONS
+\fB--ca-cert\fP=""
+	CA cert for ldaps/starttls
+
+.PP
+\fB--cnid\fP=""
+	common-name identifier (e.g. cn, sAMAccountName)
+
+.PP
+\fB--dn\fP=""
+	base distinguished name
+
+.PP
+\fB--group-search-base\fP=""
+	base DN for group lookups
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for set
+
+.PP
+\fB--password\fP=""
+	bind password
+
+.PP
+\fB--port\fP=""
+	LDAP port (default 389)
+
+.PP
+\fB--secondary-server\fP=""
+	failover LDAP server
+
+.PP
+\fB--secure\fP=""
+	disable|starttls|ldaps
+
+.PP
+\fB--server\fP=""
+	primary LDAP server
+
+.PP
+\fB--set\fP=[]
+	set an arbitrary field: --set key=value (repeatable; value may be a,b for ref lists)
+
+.PP
+\fB--type\fP=""
+	simple|anonymous|regular
+
+.PP
+\fB--username\fP=""
+	bind DN (type regular)
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB-c\fP, \fB--column\fP=[]
+	select/order output columns (repeatable)
+
+.PP
+\fB--context\fP=""
+	config context to use
+
+.PP
+\fB--debug\fP[=false]
+	log request/response metadata to stderr
+
+.PP
+\fB-o\fP, \fB--format\fP=""
+	output format: table|json|yaml|csv|value
+
+.PP
+\fB--insecure\fP[=false]
+	skip TLS verification (footgun)
+
+.PP
+\fB--no-headers\fP[=false]
+	omit table/csv headers
+
+.PP
+\fB--profile\fP=""
+	config profile to use
+
+.PP
+\fB--sort\fP=""
+	sort by column (NAME[:asc|desc])
+
+.PP
+\fB--tls-fingerprint\fP=""
+	pin the server cert SHA-256 fingerprint
+
+.PP
+\fB--token\fP=""
+	REST API token (prefer a config secret_ref or FGT_CLI_TOKEN)
+
+.PP
+\fB--user\fP=""
+	admin username for session auth (or FGT_CLI_USER)
+
+.PP
+\fB--vdom\fP=""
+	target VDOM (default: device global/root)
+
+.PP
+\fB--wide\fP[=false]
+	do not truncate wide table columns
+
+.PP
+\fB-y\fP, \fB--yes\fP[=false]
+	assume yes for destructive confirmations
+
+
+.SH SEE ALSO
+\fBfgt-user-ldap(1)\fP

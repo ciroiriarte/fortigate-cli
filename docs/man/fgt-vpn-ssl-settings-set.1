@@ -1,0 +1,139 @@
+.nh
+.TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
+
+.SH NAME
+fgt-vpn-ssl-settings-set - Update fields on a settings object
+
+
+.SH SYNOPSIS
+\fBfgt vpn ssl settings set [flags]\fP
+
+
+.SH DESCRIPTION
+Update fields on a settings object
+
+
+.SH OPTIONS
+\fB--auth-timeout\fP=""
+	seconds
+
+.PP
+\fB--default-portal\fP=""
+	default portal name
+
+.PP
+\fB--dns-server1\fP=""
+	pushed DNS
+
+.PP
+\fB--dns-server2\fP=""
+	pushed DNS
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for set
+
+.PP
+\fB--idle-timeout\fP=""
+	seconds
+
+.PP
+\fB--login-attempt-limit\fP=""
+	max failed logins
+
+.PP
+\fB--login-block-time\fP=""
+	lockout seconds
+
+.PP
+\fB--port\fP=""
+	listen port (default 443)
+
+.PP
+\fB--reqclientcert\fP=""
+	enable|disable
+
+.PP
+\fB--servercert\fP=""
+	server certificate name
+
+.PP
+\fB--set\fP=[]
+	set an arbitrary field: --set key=value (repeatable; value may be a,b for ref lists)
+
+.PP
+\fB--ssl-min-proto-ver\fP=""
+	tls1-0|tls1-1|tls1-2|tls1-3
+
+.PP
+\fB--status\fP=""
+	enable|disable
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB-c\fP, \fB--column\fP=[]
+	select/order output columns (repeatable)
+
+.PP
+\fB--context\fP=""
+	config context to use
+
+.PP
+\fB--debug\fP[=false]
+	log request/response metadata to stderr
+
+.PP
+\fB-o\fP, \fB--format\fP=""
+	output format: table|json|yaml|csv|value
+
+.PP
+\fB--insecure\fP[=false]
+	skip TLS verification (footgun)
+
+.PP
+\fB--no-headers\fP[=false]
+	omit table/csv headers
+
+.PP
+\fB--password\fP=""
+	admin password for session auth (prefer a secret_ref or FGT_CLI_PASSWORD)
+
+.PP
+\fB--profile\fP=""
+	config profile to use
+
+.PP
+\fB--server\fP=""
+	FortiGate API base URL (e.g. https://fw.example.com)
+
+.PP
+\fB--sort\fP=""
+	sort by column (NAME[:asc|desc])
+
+.PP
+\fB--tls-fingerprint\fP=""
+	pin the server cert SHA-256 fingerprint
+
+.PP
+\fB--token\fP=""
+	REST API token (prefer a config secret_ref or FGT_CLI_TOKEN)
+
+.PP
+\fB--user\fP=""
+	admin username for session auth (or FGT_CLI_USER)
+
+.PP
+\fB--vdom\fP=""
+	target VDOM (default: device global/root)
+
+.PP
+\fB--wide\fP[=false]
+	do not truncate wide table columns
+
+.PP
+\fB-y\fP, \fB--yes\fP[=false]
+	assume yes for destructive confirmations
+
+
+.SH SEE ALSO
+\fBfgt-vpn-ssl-settings(1)\fP

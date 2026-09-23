@@ -1,0 +1,127 @@
+.nh
+.TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
+
+.SH NAME
+fgt-log-syslogd-setting-set - Update fields on a setting object
+
+
+.SH SYNOPSIS
+\fBfgt log syslogd setting set [flags]\fP
+
+
+.SH DESCRIPTION
+Update fields on a setting object
+
+
+.SH OPTIONS
+\fB--certificate\fP=""
+	client certificate for reliable/TLS
+
+.PP
+\fB--enc-algorithm\fP=""
+	high|low|disable|high-medium (TLS)
+
+.PP
+\fB--facility\fP=""
+	local0..local7|kernel|user|... (syslog facility)
+
+.PP
+\fB--format\fP=""
+	default|csv|cef|rfc5424
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for set
+
+.PP
+\fB--interface\fP=""
+	egress interface (when specify)
+
+.PP
+\fB--interface-select-method\fP=""
+	auto|sdwan|specify
+
+.PP
+\fB--mode\fP=""
+	udp|legacy-reliable|reliable
+
+.PP
+\fB--port\fP=""
+	syslog port (default 514)
+
+.PP
+\fB--server\fP=""
+	syslog server IP or FQDN
+
+.PP
+\fB--set\fP=[]
+	set an arbitrary field: --set key=value (repeatable; value may be a,b for ref lists)
+
+.PP
+\fB--source-ip\fP=""
+	source IP for syslog
+
+.PP
+\fB--status\fP=""
+	enable|disable
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB-c\fP, \fB--column\fP=[]
+	select/order output columns (repeatable)
+
+.PP
+\fB--context\fP=""
+	config context to use
+
+.PP
+\fB--debug\fP[=false]
+	log request/response metadata to stderr
+
+.PP
+\fB--insecure\fP[=false]
+	skip TLS verification (footgun)
+
+.PP
+\fB--no-headers\fP[=false]
+	omit table/csv headers
+
+.PP
+\fB--password\fP=""
+	admin password for session auth (prefer a secret_ref or FGT_CLI_PASSWORD)
+
+.PP
+\fB--profile\fP=""
+	config profile to use
+
+.PP
+\fB--sort\fP=""
+	sort by column (NAME[:asc|desc])
+
+.PP
+\fB--tls-fingerprint\fP=""
+	pin the server cert SHA-256 fingerprint
+
+.PP
+\fB--token\fP=""
+	REST API token (prefer a config secret_ref or FGT_CLI_TOKEN)
+
+.PP
+\fB--user\fP=""
+	admin username for session auth (or FGT_CLI_USER)
+
+.PP
+\fB--vdom\fP=""
+	target VDOM (default: device global/root)
+
+.PP
+\fB--wide\fP[=false]
+	do not truncate wide table columns
+
+.PP
+\fB-y\fP, \fB--yes\fP[=false]
+	assume yes for destructive confirmations
+
+
+.SH SEE ALSO
+\fBfgt-log-syslogd-setting(1)\fP

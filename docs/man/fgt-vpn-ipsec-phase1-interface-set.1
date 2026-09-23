@@ -1,0 +1,147 @@
+.nh
+.TH "FGT" "1" "Sep 2026" "fgt" "fgt Manual"
+
+.SH NAME
+fgt-vpn-ipsec-phase1-interface-set - Update fields on a phase1-interface object
+
+
+.SH SYNOPSIS
+\fBfgt vpn ipsec phase1-interface set  [flags]\fP
+
+
+.SH DESCRIPTION
+Update fields on a phase1-interface object
+
+
+.SH OPTIONS
+\fB--authmethod\fP=""
+	psk|signature
+
+.PP
+\fB--comments\fP=""
+	free-text comments
+
+.PP
+\fB--dhgrp\fP=""
+	DH groups, e.g. 14 21
+
+.PP
+\fB--dpd\fP=""
+	disable|on-idle|on-demand
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for set
+
+.PP
+\fB--ike-version\fP=""
+	1|2
+
+.PP
+\fB--interface\fP=""
+	local egress interface
+
+.PP
+\fB--mode\fP=""
+	aggressive|main (IKEv1)
+
+.PP
+\fB--nattraversal\fP=""
+	enable|disable|forced
+
+.PP
+\fB--net-device\fP=""
+	enable|disable
+
+.PP
+\fB--peertype\fP=""
+	any|one|dialup|peer|peergrp
+
+.PP
+\fB--proposal\fP=""
+	phase1 proposals, e.g. aes256gcm-prfsha384
+
+.PP
+\fB--psksecret\fP=""
+	pre-shared key
+
+.PP
+\fB--remote-gw\fP=""
+	remote gateway IPv4 (static type)
+
+.PP
+\fB--set\fP=[]
+	set an arbitrary field: --set key=value (repeatable; value may be a,b for ref lists)
+
+.PP
+\fB--type\fP=""
+	static|dynamic|ddns
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB-c\fP, \fB--column\fP=[]
+	select/order output columns (repeatable)
+
+.PP
+\fB--context\fP=""
+	config context to use
+
+.PP
+\fB--debug\fP[=false]
+	log request/response metadata to stderr
+
+.PP
+\fB-o\fP, \fB--format\fP=""
+	output format: table|json|yaml|csv|value
+
+.PP
+\fB--insecure\fP[=false]
+	skip TLS verification (footgun)
+
+.PP
+\fB--no-headers\fP[=false]
+	omit table/csv headers
+
+.PP
+\fB--password\fP=""
+	admin password for session auth (prefer a secret_ref or FGT_CLI_PASSWORD)
+
+.PP
+\fB--profile\fP=""
+	config profile to use
+
+.PP
+\fB--server\fP=""
+	FortiGate API base URL (e.g. https://fw.example.com)
+
+.PP
+\fB--sort\fP=""
+	sort by column (NAME[:asc|desc])
+
+.PP
+\fB--tls-fingerprint\fP=""
+	pin the server cert SHA-256 fingerprint
+
+.PP
+\fB--token\fP=""
+	REST API token (prefer a config secret_ref or FGT_CLI_TOKEN)
+
+.PP
+\fB--user\fP=""
+	admin username for session auth (or FGT_CLI_USER)
+
+.PP
+\fB--vdom\fP=""
+	target VDOM (default: device global/root)
+
+.PP
+\fB--wide\fP[=false]
+	do not truncate wide table columns
+
+.PP
+\fB-y\fP, \fB--yes\fP[=false]
+	assume yes for destructive confirmations
+
+
+.SH SEE ALSO
+\fBfgt-vpn-ipsec-phase1-interface(1)\fP
