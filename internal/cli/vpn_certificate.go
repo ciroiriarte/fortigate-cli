@@ -90,6 +90,12 @@ func certLocalImportCmd(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if err := validateScope(scope); err != nil {
+				return err
+			}
+			if err := guardStdinConfirm(a, certFile, keyFile); err != nil {
+				return err
+			}
 			req := provider.CertImport{Store: "local", Name: args[0], Scope: scope}
 			switch {
 			case p12File != "":
@@ -112,6 +118,9 @@ func certLocalImportCmd(a *app) *cobra.Command {
 				}
 			default:
 				return fmt.Errorf("provide --cert (with optional --key) or --pkcs12")
+			}
+			if len(req.Cert) == 0 {
+				return fmt.Errorf("empty certificate/bundle; check the file")
 			}
 			if err := confirmWrite(a, "IMPORT", "vpn.certificate/local/"+req.Name); err != nil {
 				return err
@@ -144,6 +153,12 @@ func certFileImportCmd(a *app, store, label, defScope string) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			p, err := a.Provider()
 			if err != nil {
+				return err
+			}
+			if err := validateScope(scope); err != nil {
+				return err
+			}
+			if err := guardStdinConfirm(a, certFile); err != nil {
 				return err
 			}
 			cert, err := readCertInput(cmd, certFile)
@@ -179,7 +194,9 @@ func readCertInput(cmd *cobra.Command, path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
-// resolvePassphrase reads a passphrase from a file or env var (never a flag).
+// resolvePassphrase reads a passphrase from a file or env var (never a flag). A
+// named-but-unset env var is an error (a likely operator mistake), not a silent
+// empty passphrase.
 func resolvePassphrase(file, env string) (string, error) {
 	switch {
 	case file != "":
@@ -189,8 +206,37 @@ func resolvePassphrase(file, env string) (string, error) {
 		}
 		return strings.TrimRight(string(b), "\r\n"), nil
 	case env != "":
-		return os.Getenv(env), nil
+		v, ok := os.LookupEnv(env)
+		if !ok {
+			return "", fmt.Errorf("--password-env %q is not set", env)
+		}
+		return v, nil
 	default:
 		return "", nil
 	}
+}
+
+// validateScope rejects a --scope value outside the FortiOS set early, client-side.
+func validateScope(scope string) error {
+	switch scope {
+	case "", "vdom", "global":
+		return nil
+	default:
+		return fmt.Errorf("invalid --scope %q (want vdom or global)", scope)
+	}
+}
+
+// guardStdinConfirm rejects reading input from stdin (--cert -/--key -) without
+// -y, since the interactive confirmation prompt also needs stdin and would
+// otherwise consume the piped certificate (or cancel on EOF).
+func guardStdinConfirm(a *app, inputs ...string) error {
+	if a.assumeYes {
+		return nil
+	}
+	for _, in := range inputs {
+		if in == "-" {
+			return fmt.Errorf("reading from stdin (-) requires -y/--yes, since the confirmation prompt also reads stdin")
+		}
+	}
+	return nil
 }

@@ -252,6 +252,24 @@ func TestImportCertificate(t *testing.T) {
 	if got.path != "/api/v2/monitor/vpn-certificate/ca/import" || got.body["import_method"] != "file" {
 		t.Errorf("ca import path/body = %s %v", got.path, got.body)
 	}
+
+	// Password is OMITTED when empty (not sent as "" masking a required field),
+	// and included when set.
+	got.body = nil
+	p3 := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		json.Unmarshal(b, &got.body)
+		w.Write(envelope(map[string]any{"status": "success"}))
+	})
+	_ = p3.ImportCertificate(context.Background(), provider.CertImport{Store: "local", Type: "pkcs12", Name: "p", Cert: []byte("P12")})
+	if _, present := got.body["password"]; present {
+		t.Errorf("empty password must be omitted, body = %v", got.body)
+	}
+	got.body = nil
+	_ = p3.ImportCertificate(context.Background(), provider.CertImport{Store: "local", Type: "pkcs12", Name: "p", Cert: []byte("P12"), Password: "pw"})
+	if got.body["password"] != "pw" {
+		t.Errorf("set password must be sent, body = %v", got.body)
+	}
 }
 
 func TestDeviceStatus(t *testing.T) {

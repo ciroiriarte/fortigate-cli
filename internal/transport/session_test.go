@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -70,6 +71,37 @@ func TestSessionAuthFlow(t *testing.T) {
 	}
 	if csrfOnWrite != "TOK123" {
 		t.Errorf("X-CSRFTOKEN = %q, want TOK123 (unquoted)", csrfOnWrite)
+	}
+}
+
+// TestDebugDoesNotLogBody locks in the non-leak property: --debug logs only
+// method+URL+status, never the request body (which for a cert import carries
+// base64 key material and a passphrase).
+func TestDebugDoesNotLogBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Write([]byte(`{"status":"success"}`))
+	}))
+	defer srv.Close()
+
+	var buf bytes.Buffer
+	old := stderr
+	stderr = &buf
+	defer func() { stderr = old }()
+
+	c, err := New(Options{BaseURL: srv.URL, Debug: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	secret := "TOPSECRETKEYMATERIAL"
+	body := []byte(`{"file_content":"` + secret + `","password":"` + secret + `"}`)
+	if _, err := c.DoRaw(context.Background(), &Request{Method: "POST", Path: "monitor/vpn-certificate/local/import", Body: body}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(buf.String(), secret) {
+		t.Errorf("--debug output leaked the request body:\n%s", buf.String())
+	}
+	if !strings.Contains(buf.String(), "POST") {
+		t.Errorf("--debug should still log the method/URL, got:\n%s", buf.String())
 	}
 }
 

@@ -67,4 +67,29 @@ func TestResolvePassphrase(t *testing.T) {
 	if got, _ := resolvePassphrase("", ""); got != "" {
 		t.Errorf("no source => empty, got %q", got)
 	}
+	// a named-but-unset env var is an error, not a silent empty passphrase.
+	if _, err := resolvePassphrase("", "DEFINITELY_UNSET_VAR_XYZ"); err == nil {
+		t.Error("unset --password-env should error")
+	}
+}
+
+func TestValidateScopeAndStdinGuard(t *testing.T) {
+	for _, ok := range []string{"", "vdom", "global"} {
+		if err := validateScope(ok); err != nil {
+			t.Errorf("scope %q should be valid: %v", ok, err)
+		}
+	}
+	if validateScope("root") == nil {
+		t.Error("scope 'root' should be rejected")
+	}
+	// stdin input without -y is refused (confirm prompt also needs stdin).
+	if guardStdinConfirm(&app{assumeYes: false}, "-") == nil {
+		t.Error("--cert - without -y should be refused")
+	}
+	if err := guardStdinConfirm(&app{assumeYes: true}, "-"); err != nil {
+		t.Errorf("--cert - with -y should be allowed: %v", err)
+	}
+	if err := guardStdinConfirm(&app{assumeYes: false}, "file.pem"); err != nil {
+		t.Errorf("file input without stdin should be allowed: %v", err)
+	}
 }
