@@ -23,6 +23,7 @@ type app struct {
 	context     string
 	server      string
 	vdom        string
+	global      bool
 	token       string
 	user        string
 	password    string
@@ -86,6 +87,9 @@ func (a *app) overrides() config.Overrides {
 	}
 	if a.insecure {
 		ov.Insecure = &a.insecure
+	}
+	if a.global {
+		ov.Global = &a.global
 	}
 	return ov
 }
@@ -155,6 +159,7 @@ func NewRootCmd() *cobra.Command {
 	pf.StringVar(&a.context, "context", "", "config context to use")
 	pf.StringVar(&a.server, "server", "", "FortiGate API base URL (e.g. https://fw.example.com)")
 	pf.StringVar(&a.vdom, "vdom", "", "target VDOM (default: device global/root)")
+	pf.BoolVar(&a.global, "global", false, "target the global scope (multi-VDOM) instead of a VDOM")
 	pf.StringVar(&a.token, "token", "", "REST API token (prefer a config secret_ref or FGT_CLI_TOKEN)")
 	pf.StringVar(&a.user, "user", "", "admin username for session auth (or FGT_CLI_USER)")
 	pf.StringVar(&a.password, "password", "", "admin password for session auth (prefer a secret_ref or FGT_CLI_PASSWORD)")

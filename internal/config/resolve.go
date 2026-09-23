@@ -14,6 +14,7 @@ import (
 type Settings struct {
 	Server      string
 	VDOM        string
+	Global      bool // target the global scope instead of a VDOM
 	AuthType    string
 	TokenName   string
 	User        string
@@ -38,6 +39,7 @@ type Overrides struct {
 	TokenSecret string
 	User        string
 	Password    string
+	Global      *bool
 	Output      string
 	Insecure    *bool
 	Fingerprint string
@@ -95,6 +97,11 @@ func Resolve(f *File, ov Overrides) (*Settings, error) {
 	// 4. Env vars override profile values.
 	s.Server = firstNonEmpty(os.Getenv("FGT_CLI_SERVER"), s.Server)
 	s.VDOM = firstNonEmpty(os.Getenv("FGT_CLI_VDOM"), s.VDOM)
+	if v := os.Getenv("FGT_CLI_GLOBAL"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			s.Global = b
+		}
+	}
 	s.User = firstNonEmpty(os.Getenv("FGT_CLI_USER"), s.User)
 	// Each secret source is gated on the auth type so a stray FGT_CLI_PASSWORD
 	// can't silently overwrite a token (or vice-versa).
@@ -115,6 +122,14 @@ func Resolve(f *File, ov Overrides) (*Settings, error) {
 	// 5. Explicit flags override everything.
 	s.Server = firstNonEmpty(ov.Server, s.Server)
 	s.VDOM = firstNonEmpty(ov.VDOM, s.VDOM)
+	if ov.Global != nil {
+		s.Global = *ov.Global
+	}
+	// Global scope and a VDOM are mutually exclusive; --global wins and clears
+	// any inherited VDOM so requests carry ?global=1, not ?vdom=.
+	if s.Global {
+		s.VDOM = ""
+	}
 	s.User = firstNonEmpty(ov.User, s.User)
 	if ov.TokenSecret != "" && s.AuthType != "session" {
 		s.Secret = ov.TokenSecret

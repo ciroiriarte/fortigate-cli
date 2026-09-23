@@ -34,6 +34,7 @@ type Options struct {
 	Auth       auth.Provider
 	TLS        TLSConfig
 	VDOM       string        // default vdom applied to every request; "" = device default
+	Global     bool          // target the global scope (?global=1) instead of a vdom
 	Timeout    time.Duration // per-request timeout (default 30s)
 	MaxRetries int           // retries for idempotent requests (default 3)
 	Debug      bool          // log request/response metadata to stderr
@@ -48,6 +49,7 @@ type Client struct {
 	hc         *http.Client
 	auth       auth.Provider
 	vdom       string
+	global     bool
 	maxRetries int
 	debug      bool
 	userAgent  string
@@ -114,6 +116,7 @@ func New(opt Options) (*Client, error) {
 		hc:         hc,
 		auth:       opt.Auth,
 		vdom:       opt.VDOM,
+		global:     opt.Global,
 		maxRetries: retries,
 		debug:      opt.Debug,
 		userAgent:  ua,
@@ -208,8 +211,17 @@ func (c *Client) attempt(ctx context.Context, req *Request) (body []byte, status
 	for k, vs := range req.Query {
 		query[k] = append(query[k], vs...)
 	}
-	if vdom := firstNonEmpty(req.VDOM, c.vdom); vdom != "" && query.Get("vdom") == "" {
-		query.Set("vdom", vdom)
+	// Scope the request: an explicit per-request vdom/global in Query wins;
+	// otherwise the client default global scope (?global=1) or vdom (?vdom=).
+	if query.Get("vdom") == "" && query.Get("global") == "" {
+		switch {
+		case c.global:
+			query.Set("global", "1")
+		default:
+			if vdom := firstNonEmpty(req.VDOM, c.vdom); vdom != "" {
+				query.Set("vdom", vdom)
+			}
+		}
 	}
 	if len(query) > 0 {
 		u.RawQuery = query.Encode()

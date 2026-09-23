@@ -73,6 +73,28 @@ func TestSessionAuthFlow(t *testing.T) {
 	}
 }
 
+// TestGlobalScope asserts a Global client sends ?global=1 (not ?vdom=), and a
+// per-request VDOM still overrides it.
+func TestGlobalScope(t *testing.T) {
+	var q string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q = r.URL.RawQuery
+		w.Write([]byte(`{"results":{},"status":"success"}`))
+	}))
+	defer srv.Close()
+
+	c, err := New(Options{BaseURL: srv.URL, VDOM: "root", Global: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.DoRaw(context.Background(), &Request{Method: "GET", Path: "cmdb/system/global"}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(q, "global=1") || strings.Contains(q, "vdom=") {
+		t.Errorf("global-scope query = %q, want global=1 and no vdom", q)
+	}
+}
+
 // TestSessionLoginFailureHitsLogincheckOnce is the admin-lockout guard: a bad
 // password on an idempotent GET (which the transport would otherwise retry up to
 // 4×) must POST /logincheck exactly once and fail terminally — never hammer the

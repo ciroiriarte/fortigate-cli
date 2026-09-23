@@ -105,6 +105,7 @@ func NewClient(s *config.Settings, debug bool) (*transport.Client, error) {
 		Auth:      ap,
 		TLS:       tlsCfg,
 		VDOM:      s.VDOM,
+		Global:    s.Global,
 		Debug:     debug,
 		UserAgent: "fortigate-cli",
 		RateQPS:   s.RateQPS,
