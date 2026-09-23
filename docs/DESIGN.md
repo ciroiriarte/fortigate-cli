@@ -78,9 +78,14 @@ block on hand-writing hundreds of cmdb tables.
   provisioned. `auth.type: session` with `user` + a password (`secret_ref`,
   `FGT_CLI_PASSWORD`, or `--password`); login is lazy and reused per invocation.
   Token auth remains the default and automation-safe path.
-- **M5 — schema-driven scaffolding**: generate command/flag trees from FortiOS
-  per-object cmdb schemas (each object exposes its own field schema) or from the
-  Terraform provider's resource map, promoting raw endpoints into typed commands.
+- **M5** 🚧 — schema-driven scaffolding. Shipped: `fgt schema <cmdb-path>`
+  renders an object's per-build field schema (`?action=schema`) and `--gen`
+  emits a `resource{}` declaration skeleton (mkey/numeric/single, enum usages,
+  ref/range child-table kinds; other child keys flagged for `--set`/`api`) — the
+  maintainer trims it into a curated command. This makes adding objects cheap
+  without dumping low-quality auto-generated commands for all ~750 objects.
+  Remaining/optional: a `go generate` path that bulk-emits committed resource
+  tables, and cross-checking against the Terraform provider's resource map.
 - **M6 — FortiManager backend**: a second `Provider` targeting FortiManager's
   JSON-RPC API for fleet-wide management.
 - **Cross-cutting**: config backup/restore (`/api/v2/backup`), man pages +
