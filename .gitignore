@@ -15,7 +15,7 @@ coverage.txt
 /.omc/
 
 # Local REST API token(s) for live testing — never commit
-/.fgt_token
+/.fgt_token*
 /.secrets/
 
 # Large upstream reference PDFs (local support material, not versioned)

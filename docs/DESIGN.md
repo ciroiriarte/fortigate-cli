@@ -100,6 +100,13 @@ block on hand-writing hundreds of cmdb tables.
   SVG/PNG renderer). Cabling validation is inferential only (LLDP mismatch,
   admin-up+link-down, speed-below-expected); REST cannot physically trace a
   cable, and TDR/copper length tests need a CLI trigger that blocks the API.
+  **VDOM-scope caveat**: all interface/transceiver/sensor/health reads only
+  cover the VDOM(s) the credential can see, so a VDOM-scoped token yields a
+  *partial* inventory that reads as "missing hardware" — e.g. a root-scoped
+  token misses 10G uplinks that live in another VDOM, transceivers and all.
+  A whole-device view needs a credential with global/all-VDOM scope (or a
+  per-VDOM sweep via `--vdom`); a later enhancement should surface the visible
+  VDOM set and optionally iterate all accessible VDOMs so the gap is not silent.
 - **CVE check** ✅ — `fgt cve list` / `fgt cve check <CVE-ID>` report the CVEs
   affecting the running FortiOS version (read from the device via
   `monitor/system/status`). CVE data is sourced from **external** public feeds
