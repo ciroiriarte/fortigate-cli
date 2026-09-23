@@ -73,10 +73,6 @@ func newSystemCmd(a *app) *cobra.Command {
 	return cmd
 }
 
-// newInterfaceCmd exposes system interfaces. `list` reads the monitor surface for
-// live status/IP the cmdb object alone does not carry; show/create/set/delete
-// operate on the cmdb config object. Aggregate `member` and other child-tables
-// are reachable via --set / the api escape hatch.
 // newStatusCmd shows device identity + FortiOS version (monitor surface) and
 // notes whether the detected version is in fgt's supported matrix.
 func newStatusCmd(a *app) *cobra.Command {
@@ -114,6 +110,10 @@ func newStatusCmd(a *app) *cobra.Command {
 	}
 }
 
+// newInterfaceCmd exposes system interfaces. `list` reads the monitor surface for
+// live status/IP the cmdb object alone does not carry; show/create/set/delete
+// operate on the cmdb config object. Aggregate `member` and other child-tables
+// are reachable via --set / the api escape hatch.
 func newInterfaceCmd(a *app) *cobra.Command {
 	iface := &cobra.Command{
 		Use:     "interface",

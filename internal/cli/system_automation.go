@@ -59,7 +59,7 @@ func systemAutomationCommands(a *app) []*cobra.Command {
 		},
 	}
 
-	automation := &cobra.Command{Use: "automation", Aliases: []string{"auto"}, Short: "Manage automation stitches"}
+	automation := &cobra.Command{Use: "automation", Aliases: []string{"auto"}, Short: "Manage automation triggers, actions, and stitches"}
 	automation.AddCommand(a.newResourceCmd(trigger), a.newResourceCmd(action), a.newResourceCmd(stitch))
 	return []*cobra.Command{automation}
 }
