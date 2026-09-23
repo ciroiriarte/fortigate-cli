@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ciroiriarte/fortigate-cli/internal/output"
+	"github.com/ciroiriarte/fortigate-cli/internal/protocol"
 	"github.com/ciroiriarte/fortigate-cli/internal/provider"
 )
 
@@ -192,6 +193,20 @@ func (a *app) resSet(r resource) *cobra.Command {
 				return err
 			}
 			if err := p.CmdbUpdate(cmd.Context(), r.path, mkey, body); err != nil {
+				// Explicit upsert: a PUT to a missing mkey falls back to a create.
+				upsert, _ := cmd.Flags().GetBool("upsert")
+				if upsert && !r.single && protocol.IsNotFound(err) {
+					body[r.mkey] = r.mkeyValue(mkey)
+					newKey, cerr := p.CmdbCreate(cmd.Context(), r.path, body)
+					if cerr != nil {
+						return cerr
+					}
+					if newKey == "" {
+						newKey = mkey
+					}
+					fmt.Fprintf(cmd.OutOrStdout(), "created %s %s (upsert)\n", r.use, newKey)
+					return nil
+				}
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "updated %s %s\n", r.use, mkey)
@@ -199,6 +214,9 @@ func (a *app) resSet(r resource) *cobra.Command {
 		},
 	}
 	r.registerFlags(cmd, vals)
+	if !r.single {
+		cmd.Flags().Bool("upsert", false, "if the object doesn't exist, create it instead (PUT→POST fallback)")
+	}
 	return cmd
 }
 

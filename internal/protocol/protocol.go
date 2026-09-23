@@ -20,6 +20,7 @@ package protocol
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -110,6 +111,17 @@ func DecodeData(body []byte, out any) error {
 }
 
 // DecodeError builds an APIError from a non-2xx response.
+// errorCodeText maps the common FortiOS numeric `error` codes to a short
+// message, used when the body carries no cli_error. Not exhaustive (~300+
+// exist); the raw code is always appended so any code stays diagnosable.
+var errorCodeText = map[int]string{
+	-3:  "entry not found",
+	-5:  "unable to match the entry",
+	-8:  "duplicate entry",
+	-14: "permission denied (access profile)",
+	-23: "invalid value for a field",
+}
+
 func DecodeError(status int, body []byte) *APIError {
 	e := &APIError{Kind: kindForStatus(status), HTTPStatus: status}
 	var env Envelope
@@ -118,6 +130,12 @@ func DecodeError(status int, body []byte) *APIError {
 		switch {
 		case env.CLIError != "":
 			e.Message = env.CLIError
+		case errorCodeText[env.Error] != "":
+			e.Message = errorCodeText[env.Error]
+		case status == 403:
+			// A bare 403 is ambiguous — auth/CSRF vs an access-profile or
+			// VDOM-scope permission problem. Disambiguate for the user.
+			e.Message = "permission denied (403) — the account's access profile may lack rights for this operation, a VDOM-scope mismatch, or a missing/expired session (CSRF)"
 		case env.Status != "" && env.Status != "success":
 			e.Message = fmt.Sprintf("FortiOS returned status %q", env.Status)
 		}
@@ -126,6 +144,16 @@ func DecodeError(status int, body []byte) *APIError {
 		e.Message = fmt.Sprintf("request failed with HTTP %d", status)
 	}
 	return e
+}
+
+// IsNotFound reports whether err is a FortiOS "entry not found" — HTTP 404/424
+// or numeric error -3. Used by the --upsert fallback.
+func IsNotFound(err error) bool {
+	var ae *APIError
+	if !errors.As(err, &ae) {
+		return false
+	}
+	return ae.Kind == KindNotFound || ae.Code == -3
 }
 
 func kindForStatus(status int) Kind {

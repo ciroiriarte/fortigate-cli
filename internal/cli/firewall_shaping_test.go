@@ -20,12 +20,22 @@ type testProvider struct {
 	restoreCalled bool
 	restoreScope  string
 	restoreCfg    []byte
+
+	updateErr    error // returned by CmdbUpdate (nil = success)
+	createCalled bool
 }
 
 func (tp *testProvider) CmdbCreate(_ context.Context, path string, obj provider.Object) (string, error) {
 	tp.lastPath = path
 	tp.lastObj = obj
+	tp.createCalled = true
 	return "1", nil
+}
+
+func (tp *testProvider) CmdbUpdate(_ context.Context, path, _ string, obj provider.Object) error {
+	tp.lastPath = path
+	tp.lastObj = obj
+	return tp.updateErr
 }
 
 func (tp *testProvider) ConfigRestore(_ context.Context, scope, _ string, cfg []byte) error {

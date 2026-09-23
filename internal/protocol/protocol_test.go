@@ -1,6 +1,42 @@
 package protocol
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
+
+func TestDecodeErrorCodesAndHints(t *testing.T) {
+	// numeric code (no cli_error) -> friendly text from the map; Code retained.
+	e := DecodeError(500, []byte(`{"status":"error","http_status":500,"error":-3}`))
+	if e.Message != "entry not found" || e.Code != -3 {
+		t.Errorf("code -3 => message %q code %d", e.Message, e.Code)
+	}
+	// cli_error preferred over the code map.
+	e = DecodeError(400, []byte(`{"status":"error","http_status":400,"error":-23,"cli_error":"value parse error"}`))
+	if !strings.HasPrefix(e.Message, "value parse error") {
+		t.Errorf("cli_error should win, got %q", e.Message)
+	}
+	// bare 403 gets the permission/auth disambiguation hint.
+	e = DecodeError(403, []byte(`{"status":"error","http_status":403}`))
+	if !strings.Contains(e.Message, "permission denied (403)") {
+		t.Errorf("403 hint missing: %q", e.Message)
+	}
+}
+
+func TestIsNotFound(t *testing.T) {
+	if !IsNotFound(&APIError{Kind: KindNotFound}) {
+		t.Error("KindNotFound should be not-found")
+	}
+	if !IsNotFound(&APIError{Kind: KindConflict, Code: -3}) {
+		t.Error("error -3 should be not-found")
+	}
+	if IsNotFound(&APIError{Kind: KindAuth, HTTPStatus: 403}) {
+		t.Error("a 403 is not not-found")
+	}
+	if IsNotFound(nil) {
+		t.Error("nil is not not-found")
+	}
+}
 
 func TestDecodeData_ExtractsResultsArray(t *testing.T) {
 	body := []byte(`{"results":[{"name":"web"},{"name":"db"}],"status":"success","http_status":200}`)

@@ -1,11 +1,49 @@
 package cli
 
 import (
+	"io"
 	"reflect"
 	"testing"
 
 	"github.com/spf13/cobra"
+
+	"github.com/ciroiriarte/fortigate-cli/internal/protocol"
 )
+
+func TestSetUpsertFallback(t *testing.T) {
+	r := resource{use: "addr", path: "firewall/address", mkey: "name",
+		fields: []fieldSpec{{name: "comment"}}}
+
+	// --upsert + a not-found update falls back to create carrying the mkey.
+	tp := &testProvider{updateErr: &protocol.APIError{Kind: protocol.KindNotFound, Code: -3}}
+	a := &app{prov: tp, assumeYes: true}
+	cmd := a.resSet(r)
+	cmd.SetOut(io.Discard)
+	_ = cmd.Flags().Set("comment", "x")
+	_ = cmd.Flags().Set("upsert", "true")
+	if err := cmd.RunE(cmd, []string{"web"}); err != nil {
+		t.Fatalf("upsert set: %v", err)
+	}
+	if !tp.createCalled {
+		t.Error("upsert should fall back to create on not-found")
+	}
+	if tp.lastObj["name"] != "web" {
+		t.Errorf("upsert create body must carry the mkey, got %v", tp.lastObj)
+	}
+
+	// Without --upsert, the not-found error propagates and no create happens.
+	tp2 := &testProvider{updateErr: &protocol.APIError{Kind: protocol.KindNotFound, Code: -3}}
+	a2 := &app{prov: tp2, assumeYes: true}
+	cmd2 := a2.resSet(r)
+	cmd2.SetOut(io.Discard)
+	_ = cmd2.Flags().Set("comment", "x")
+	if err := cmd2.RunE(cmd2, []string{"web"}); err == nil {
+		t.Error("without --upsert a not-found update should error")
+	}
+	if tp2.createCalled {
+		t.Error("without --upsert there must be no create")
+	}
+}
 
 func TestRefList(t *testing.T) {
 	got := refList("all, web ,, db")
