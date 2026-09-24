@@ -25,6 +25,87 @@ func TestNetworkCommandTree(t *testing.T) {
 	if findCmd(root, "network", "lldp", "neighbors") == nil {
 		t.Fatal("network lldp neighbors did not resolve")
 	}
+	if findCmd(root, "network", "topology") == nil {
+		t.Fatal("network topology did not resolve")
+	}
+}
+
+// topoFake serves device identity, LLDP neighbors, HA members, and interfaces to
+// the topology command.
+type topoFake struct {
+	provider.Provider
+	dev       domain.DeviceStatus
+	neighbors []domain.LLDPNeighbor
+	ha        []provider.Object
+	ifaces    []domain.Interface
+}
+
+func (f *topoFake) DeviceStatus(context.Context) (domain.DeviceStatus, error) {
+	return f.dev, nil
+}
+func (f *topoFake) ListLLDPNeighbors(context.Context) ([]domain.LLDPNeighbor, error) {
+	return f.neighbors, nil
+}
+func (f *topoFake) HAStatus(context.Context) ([]provider.Object, error) { return f.ha, nil }
+func (f *topoFake) ListInterfacesFull(context.Context) ([]domain.Interface, error) {
+	return f.ifaces, nil
+}
+
+func newTopoApp() *app {
+	return &app{prov: &topoFake{
+		dev: domain.DeviceStatus{Hostname: "FGT-Amsa-Master", Model: "FG100F", Serial: "FG100FTK1"},
+		neighbors: []domain.LLDPNeighbor{
+			{LocalPort: "x2", NeighborName: "prd-svcs-sw-02", NeighborPort: "port57"},
+			{LocalPort: "x1", NeighborName: "prd-svcs-sw-01", NeighborPort: "port57"},
+		},
+		ifaces: []domain.Interface{{Name: "x1", Speed: "10000"}, {Name: "x2", Speed: "1000"}},
+	}}
+}
+
+// TestTopologyDefaultMermaid asserts the default mermaid rendering shows both
+// neighbors and the 10G-enriched edge label.
+func TestTopologyDefaultMermaid(t *testing.T) {
+	cmd := networkTopologyCmd(newTopoApp())
+	out := captureStdout(t, func() {
+		if err := cmd.RunE(cmd, nil); err != nil {
+			t.Fatalf("topology RunE: %v", err)
+		}
+	})
+	for _, want := range []string{
+		"graph LR",
+		"prd-svcs-sw-01",
+		"prd-svcs-sw-02",
+		`fgt -->|"x1 (10G) - port57"| prd_svcs_sw_01`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("mermaid output missing %q:\n%s", want, out)
+		}
+	}
+}
+
+// TestTopologyFormatSwitch asserts --format dot / json change the output.
+func TestTopologyFormatSwitch(t *testing.T) {
+	dotCmd := networkTopologyCmd(newTopoApp())
+	_ = dotCmd.PersistentFlags().Set("format", "dot")
+	dot := captureStdout(t, func() {
+		if err := dotCmd.RunE(dotCmd, nil); err != nil {
+			t.Fatalf("dot RunE: %v", err)
+		}
+	})
+	if !strings.Contains(dot, "digraph topology {") {
+		t.Errorf("dot format did not switch output:\n%s", dot)
+	}
+
+	jsonCmd := networkTopologyCmd(newTopoApp())
+	_ = jsonCmd.PersistentFlags().Set("format", "json")
+	js := captureStdout(t, func() {
+		if err := jsonCmd.RunE(jsonCmd, nil); err != nil {
+			t.Fatalf("json RunE: %v", err)
+		}
+	})
+	if !strings.Contains(js, `"device"`) || !strings.Contains(js, `"edges"`) {
+		t.Errorf("json format did not switch output:\n%s", js)
+	}
 }
 
 // TestLLDPNeighborsRender asserts the table renders both neighbors with the
