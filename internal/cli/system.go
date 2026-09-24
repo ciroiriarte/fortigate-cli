@@ -203,7 +203,7 @@ func newHACmd(a *app) *cobra.Command {
 			{name: "session-pickup", usage: "enable|disable"},
 		},
 	}
-	ha.AddCommand(a.resShow(r), a.resSet(r), haStatusCmd(a))
+	ha.AddCommand(a.resShow(r), a.resSet(r), haStatusCmd(a), haCheckCmd(a))
 	return ha
 }
 

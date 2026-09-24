@@ -62,6 +62,20 @@ type Provider interface {
 	// surface), left untyped for the same reason as HAStatus.
 	SSLSessions(ctx context.Context) ([]Object, error)
 
+	// HAMembers returns the HA cluster members from monitor/system/ha-peer
+	// (roles/priority per unit), decoded tolerantly with the original record in
+	// Raw. A standalone/older build returns a single member; an empty/404 result
+	// yields an empty slice and nil error.
+	HAMembers(ctx context.Context) ([]domain.HAMember, error)
+	// HAConfig returns the cluster configuration from the cmdb/system/ha
+	// singleton (mode, group name, heartbeat interfaces parsed from the hbdev
+	// string). A 404/absent object yields a zero HAConfig and nil error.
+	HAConfig(ctx context.Context) (domain.HAConfig, error)
+	// HAChecksums returns the per-member config-sync checksums from
+	// monitor/system/ha-checksums, decoded tolerantly with the original record in
+	// Raw. An empty/404 result yields an empty slice and nil error.
+	HAChecksums(ctx context.Context) ([]domain.HAChecksum, error)
+
 	// ListTransceivers returns pluggable-optic DDM inventory
 	// (monitor/system/interface/transceivers). The endpoint schema is unverified,
 	// so the implementation decodes tolerantly and each Transceiver carries its
