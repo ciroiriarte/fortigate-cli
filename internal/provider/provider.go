@@ -39,8 +39,17 @@ type CertImport struct {
 type Provider interface {
 	Name() string
 
-	// ListInterfaces returns system interfaces (monitor surface).
+	// ListInterfaces returns system interfaces (monitor surface only). It reports
+	// only interfaces the monitor exposes, so a VDOM whose interfaces are all
+	// logical (VLANs/tunnels/zones) comes back empty. Prefer ListInterfacesFull
+	// for a complete inventory.
 	ListInterfaces(ctx context.Context) ([]domain.Interface, error)
+	// ListInterfacesFull returns the MERGED interface inventory for the current
+	// VDOM scope: the cmdb config set (authoritative — every configured
+	// interface, with AdminStatus) overlaid with the monitor live status
+	// (Status/Speed/Duplex and live IP where present). Either surface degrading
+	// (404/error) still yields the other's data; both are decoded tolerantly.
+	ListInterfacesFull(ctx context.Context) ([]domain.Interface, error)
 	// ListManagedSwitches returns FortiLink-managed FortiSwitch units.
 	ListManagedSwitches(ctx context.Context) ([]domain.ManagedSwitch, error)
 	// DeviceStatus returns device identity + FortiOS version (monitor surface).

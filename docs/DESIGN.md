@@ -61,8 +61,10 @@ block on hand-writing hundreds of cmdb tables.
     `prefix-list`/`access-list` (thin wrappers — `rule` child-tables via `--set`
     until M5 codegen).
   - `system admin`, `system dns` (singleton), `system interface` (cmdb
-    show/create/set/delete; `list` stays on the monitor surface for live
-    status/IP), **VDOM administration** `system vdom` CRUD, and **HA clustering**
+    show/create/set/delete; `list` merges the cmdb config inventory — the
+    authoritative full set, including logical VLANs/tunnels/zones — with the
+    monitor live-status overlay for link/speed/duplex/IP), **VDOM administration**
+    `system vdom` CRUD, and **HA clustering**
     `system ha` config (singleton show/set) + `system ha status`
     (`monitor/system/ha-statistics`). VDOM *scoping* (`--vdom`) shipped in M1.
   - Deferred to later milestones: inter-VDOM links / `npu-vlink` (see NPU

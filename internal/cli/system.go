@@ -112,8 +112,9 @@ func newStatusCmd(a *app) *cobra.Command {
 	}
 }
 
-// newInterfaceCmd exposes system interfaces. `list` reads the monitor surface for
-// live status/IP the cmdb object alone does not carry; show/create/set/delete
+// newInterfaceCmd exposes system interfaces. `list` merges the cmdb config
+// inventory (the authoritative full set, including logical VLANs/tunnels/zones)
+// with the monitor surface's live status/IP overlay; show/create/set/delete
 // operate on the cmdb config object. Aggregate `member` and other child-tables
 // are reachable via --set / the api escape hatch.
 func newInterfaceCmd(a *app) *cobra.Command {
@@ -150,27 +151,31 @@ func newInterfaceCmd(a *app) *cobra.Command {
 	return iface
 }
 
-// interfaceListCmd lists interfaces with live status from the monitor surface.
+// interfaceListCmd lists the full interface inventory: the cmdb config set merged
+// with the monitor live-status overlay, so a VDOM whose interfaces are all
+// logical (VLANs/tunnels/zones, absent from the monitor surface) still lists.
+// ADMIN is the configured admin state (cmdb); LINK is the live link state
+// (monitor) — either may be blank when that surface does not know the interface.
 func interfaceListCmd(a *app) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
-		Short: "List interfaces with live status (monitor surface)",
+		Short: "List interfaces (cmdb config inventory + live monitor status)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			p, err := a.Provider()
 			if err != nil {
 				return err
 			}
-			ifaces, err := p.ListInterfaces(cmd.Context())
+			ifaces, err := p.ListInterfacesFull(cmd.Context())
 			if err != nil {
 				return err
 			}
 			t := output.Tabular{
-				Columns: []string{"NAME", "TYPE", "IP", "STATUS", "SPEED", "DUPLEX", "VDOM", "ALIAS"},
+				Columns: []string{"NAME", "TYPE", "ADMIN", "LINK", "SPEED", "DUPLEX", "IP", "VDOM", "ALIAS"},
 				Raw:     ifaces,
 			}
 			for _, i := range ifaces {
-				t.Rows = append(t.Rows, []string{i.Name, i.Type, i.IP, i.Status, i.Speed, i.Duplex, i.VDOM, i.Alias})
+				t.Rows = append(t.Rows, []string{i.Name, i.Type, i.AdminStatus, i.Status, i.Speed, i.Duplex, i.IP, i.VDOM, i.Alias})
 			}
 			return a.render(t)
 		},

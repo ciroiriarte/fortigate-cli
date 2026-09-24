@@ -56,6 +56,15 @@ type Client struct {
 	limiter    *rate.Limiter
 }
 
+// VDOM returns the client's configured default VDOM ("" = device default,
+// effectively "root" unless Global is set). It lets a provider replicate the
+// request scoping for a global config object that FortiOS does not filter by the
+// ?vdom= param (e.g. system/interface), without changing transport behavior.
+func (c *Client) VDOM() string { return c.vdom }
+
+// Global reports whether the client targets the global scope instead of a VDOM.
+func (c *Client) Global() bool { return c.global }
+
 // Request is a single API call.
 type Request struct {
 	Method string

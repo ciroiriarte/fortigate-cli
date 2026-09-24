@@ -3,17 +3,24 @@
 package domain
 
 // Interface is a FortiOS system interface (physical, VLAN, aggregate, ...).
+// The two status fields come from different surfaces and mean different things:
+//   - Status is the live LINK state (up/down) from the monitor surface, blank
+//     when the interface is absent there (e.g. a logical VLAN/tunnel/zone).
+//   - AdminStatus is the configured ADMIN state (up/down) from the cmdb config
+//     object, blank when the interface is absent from cmdb.
+//
 // Speed/Duplex are live link parameters from the monitor surface (empty when the
 // build does not report them, e.g. virtual or down interfaces).
 type Interface struct {
-	Name   string `json:"name"`
-	Type   string `json:"type"`
-	IP     string `json:"ip"`
-	Status string `json:"status"`
-	VDOM   string `json:"vdom"`
-	Alias  string `json:"alias"`
-	Speed  string `json:"speed,omitempty"`
-	Duplex string `json:"duplex,omitempty"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	IP          string `json:"ip"`
+	Status      string `json:"status"`       // live link state (monitor surface)
+	AdminStatus string `json:"admin_status"` // configured admin state (cmdb surface)
+	VDOM        string `json:"vdom"`
+	Alias       string `json:"alias"`
+	Speed       string `json:"speed,omitempty"`
+	Duplex      string `json:"duplex,omitempty"`
 }
 
 // DeviceStatus is the "what am I talking to" probe (monitor/system/status):

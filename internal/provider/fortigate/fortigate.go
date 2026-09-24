@@ -82,6 +82,145 @@ func (f *fortiGate) ListInterfaces(ctx context.Context) ([]domain.Interface, err
 	return out, nil
 }
 
+// ListInterfacesFull returns the merged interface inventory for the current VDOM
+// scope: the cmdb config object is the authoritative full set (every configured
+// interface, including logical VLANs/tunnels/zones the monitor surface omits),
+// overlaid with the monitor surface's live link status/speed/duplex/IP where the
+// interface name matches. Interfaces present only in the monitor surface are kept
+// too. Either surface can 404/error independently without failing the command;
+// only when BOTH surfaces yield nothing is an error returned.
+//
+// cmdb/system/interface is a GLOBAL table (FortiOS returns every VDOM's
+// interfaces regardless of ?vdom=), so a vdom-scoped call filters it to the
+// target VDOM by each interface's own "vdom" field; global scope keeps them all.
+func (f *fortiGate) ListInterfacesFull(ctx context.Context) ([]domain.Interface, error) {
+	cmdb, cmdbErr := f.cmdbInterfaces(ctx)
+	// cmdb/system/interface is a GLOBAL config table: FortiOS returns every
+	// interface across ALL VDOMs regardless of the ?vdom= param, each carrying its
+	// own "vdom" field. Filter to the effective target VDOM so a vdom-scoped list
+	// shows only that VDOM's interfaces; global scope keeps the whole-box view.
+	if !f.cl.Global() {
+		cmdb = filterByVDOM(cmdb, effectiveVDOM(f.cl.VDOM()))
+	}
+
+	monList, monErr := f.ListInterfaces(ctx)
+
+	// Index the monitor live data by interface name for overlay lookup.
+	mon := make(map[string]domain.Interface, len(monList))
+	for _, m := range monList {
+		mon[m.Name] = m
+	}
+
+	seen := make(map[string]bool, len(cmdb))
+	out := make([]domain.Interface, 0, len(cmdb)+len(monList))
+	for _, c := range cmdb {
+		if c.Name == "" {
+			continue
+		}
+		seen[c.Name] = true
+		if m, ok := mon[c.Name]; ok {
+			c.Status = m.Status // live link state
+			c.Speed = m.Speed
+			c.Duplex = m.Duplex
+			if nonZeroIP(m.IP) { // prefer a real monitor IP over the cmdb config IP
+				c.IP = m.IP
+			}
+		}
+		out = append(out, c)
+	}
+	// Defensive: surface any interface the monitor knows but cmdb did not return.
+	for _, m := range monList {
+		if m.Name != "" && !seen[m.Name] {
+			out = append(out, m)
+		}
+	}
+
+	// Degrade gracefully: only fail when neither surface produced anything.
+	if len(out) == 0 && cmdbErr != nil && monErr != nil {
+		return nil, cmdbErr
+	}
+	return out, nil
+}
+
+// cmdbInterfaces reads the cmdb config inventory (the authoritative full set,
+// including logical interfaces the monitor surface omits) into domain.Interface
+// values carrying only the config-sourced fields (AdminStatus from "status", the
+// configured IP, Type/VDOM/Alias). Live link fields are left blank for the merge
+// to fill. Decoding is tolerant: missing/renamed/retyped fields never panic.
+func (f *fortiGate) cmdbInterfaces(ctx context.Context) ([]domain.Interface, error) {
+	// cmdb/system/interface returns an array of config objects.
+	var raw []struct {
+		Name   string `json:"name"`
+		Type   string `json:"type"`
+		VDOM   string `json:"vdom"`
+		Status string `json:"status"` // admin up/down
+		IP     string `json:"ip"`     // "A.B.C.D M.M.M.M", empty, or 0.0.0.0
+		Alias  string `json:"alias"`
+	}
+	if err := f.cl.Do(ctx, &transport.Request{Method: "GET", Path: "cmdb/system/interface"}, &raw); err != nil {
+		return nil, err
+	}
+	out := make([]domain.Interface, 0, len(raw))
+	for _, v := range raw {
+		out = append(out, domain.Interface{
+			Name:        v.Name,
+			Type:        v.Type,
+			IP:          normalizeCmdbIP(v.IP),
+			AdminStatus: v.Status,
+			VDOM:        v.VDOM,
+			Alias:       v.Alias,
+		})
+	}
+	return out, nil
+}
+
+// effectiveVDOM resolves the client's configured default VDOM to the concrete
+// name FortiOS applies: an unset default ("") means the root VDOM.
+func effectiveVDOM(vdom string) string {
+	if vdom == "" {
+		return "root"
+	}
+	return vdom
+}
+
+// filterByVDOM keeps only interfaces owned by the target VDOM (case-sensitive
+// match on the FortiOS vdom name). An interface with an empty vdom field is kept
+// defensively (e.g. a build that omits it on a non-multi-VDOM box), so a genuine
+// single-VDOM device never filters itself empty.
+func filterByVDOM(in []domain.Interface, target string) []domain.Interface {
+	out := in[:0:0]
+	for _, iface := range in {
+		if iface.VDOM == target || iface.VDOM == "" {
+			out = append(out, iface)
+		}
+	}
+	return out
+}
+
+// nonZeroIP reports whether an IP string carries a real address rather than the
+// unassigned 0.0.0.0 placeholder FortiOS returns for an unnumbered interface. It
+// tolerates "addr", "addr mask", and "addr/pfx" shapes.
+func nonZeroIP(s string) bool {
+	fields := strings.Fields(strings.TrimSpace(s))
+	if len(fields) == 0 {
+		return false
+	}
+	addr := fields[0]
+	if i := strings.IndexByte(addr, '/'); i >= 0 {
+		addr = addr[:i]
+	}
+	return addr != "" && addr != "0.0.0.0" && addr != "::"
+}
+
+// normalizeCmdbIP blanks the 0.0.0.0 placeholder cmdb reports for an unnumbered
+// interface, otherwise returns the configured "ip mask" string trimmed.
+func normalizeCmdbIP(s string) string {
+	if !nonZeroIP(s) {
+		return ""
+	}
+	return strings.TrimSpace(s)
+}
+
 // DeviceStatus reads monitor/system/status. serial/version/build sit at the
 // envelope top level (siblings of results); model/hostname are inside results.
 func (f *fortiGate) DeviceStatus(ctx context.Context) (domain.DeviceStatus, error) {
