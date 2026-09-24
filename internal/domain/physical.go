@@ -105,3 +105,27 @@ type Sensor struct {
 func (s Sensor) HasBasis() bool {
 	return s.Thresholds.Any() || s.Alarm != nil
 }
+
+// LLDPNeighbor is one observed LLDP neighbor from monitor/network/lldp/neighbors
+// (the neighbor table learned on this FortiGate's interfaces). It is VDOM-scoped:
+// only neighbors on interfaces in the queried VDOM appear, and only when LLDP
+// reception is enabled on those interfaces.
+//
+// Field origins (mapped from the live FG100F/7.4.12 record): LocalPort is this
+// FortiGate's interface the neighbor was seen on (port_name); NeighborName is the
+// remote device (system_name); NeighborPort is the remote port (port_id, falling
+// back to port_desc); ChassisID/MAC identify the neighbor chassis/port; MgmtIPs
+// are the neighbor's advertised management addresses (addresses[].address). Raw
+// holds the untouched device record for faithful json/yaml passthrough, matching
+// the Transceiver/Sensor pattern.
+type LLDPNeighbor struct {
+	LocalPort    string         `json:"local_port"`
+	NeighborName string         `json:"neighbor_name,omitempty"`
+	NeighborPort string         `json:"neighbor_port,omitempty"`
+	ChassisID    string         `json:"chassis_id,omitempty"`
+	MAC          string         `json:"mac,omitempty"`
+	MgmtIPs      []string       `json:"mgmt_ips,omitempty"`
+	SystemDesc   string         `json:"system_desc,omitempty"`
+	TTL          int            `json:"ttl,omitempty"`
+	Raw          map[string]any `json:"-"`
+}

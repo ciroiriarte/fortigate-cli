@@ -72,6 +72,11 @@ type Provider interface {
 	// decoded tolerantly with the original record in Raw. Same absent-hardware
 	// contract as ListTransceivers.
 	ListSensors(ctx context.Context) ([]domain.Sensor, error)
+	// ListLLDPNeighbors returns the observed LLDP neighbor table
+	// (monitor/network/lldp/neighbors), VDOM-scoped by the transport. Records are
+	// decoded tolerantly with the original record in Raw. An empty/404 result
+	// (no neighbors, or LLDP reception off) yields an empty slice and nil error.
+	ListLLDPNeighbors(ctx context.Context) ([]domain.LLDPNeighbor, error)
 
 	// Generic cmdb CRUD. path is the cmdb-relative object path, e.g.
 	// "firewall/address" or "firewall.service/custom". These back the curated
