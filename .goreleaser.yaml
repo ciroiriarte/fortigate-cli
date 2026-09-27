@@ -1,6 +1,13 @@
-# goreleaser config — builds static binaries + .deb/.rpm + archives on tag push.
-# The binary is built once with CGO_ENABLED=0 (fully static), so the resulting
-# packages install on any distro regardless of its stock Go version.
+# goreleaser config — the GitHub side of the two-channel release pipeline.
+#
+# Builds fully-static binaries (CGO_ENABLED=0) once, then produces:
+#   - tar.gz / zip archives (with LICENSE, NOTICE, README, man pages, completions)
+#   - .deb / .rpm convenience packages (man pages + completions + license installed)
+#   - checksums.txt, cosign keyless signature/cert, and SPDX SBOMs
+# The release is created as a DRAFT; the release workflow adds provenance
+# attestations and only then flips it public. See .github/workflows/release.yml
+# and packaging/obs/ for the distro-native (OBS) channel.
+#
 # Validate locally with `goreleaser check`.
 version: 2
 
@@ -16,11 +23,14 @@ builds:
     goarch: [amd64, arm64]
     flags:
       - -trimpath
+    # Reproducibility: stamp the commit timestamp into the binary rather than
+    # wall-clock build time, and use the commit date for the version banner.
+    mod_timestamp: "{{ .CommitTimestamp }}"
     ldflags:
       - -s -w
       - -X github.com/ciroiriarte/fortigate-cli/internal/version.Version={{ .Version }}
       - -X github.com/ciroiriarte/fortigate-cli/internal/version.Commit={{ .ShortCommit }}
-      - -X github.com/ciroiriarte/fortigate-cli/internal/version.Date={{ .Date }}
+      - -X github.com/ciroiriarte/fortigate-cli/internal/version.Date={{ .CommitDate }}
 
 archives:
   - id: default
@@ -33,6 +43,10 @@ archives:
       - LICENSE
       - NOTICE
       - README.md
+      - src: docs/man/*.1
+        dst: man
+      - src: contrib/completions/*
+        dst: completions
 
 nfpms:
   - id: packages
@@ -44,15 +58,108 @@ nfpms:
     license: Apache-2.0
     homepage: https://github.com/ciroiriarte/fortigate-cli
     bindir: /usr/bin
+    # `apt search fortigate` / `dnf search fortigate` find the package by its
+    # full name; `apt install fgt` still resolves via the virtual provide.
+    provides:
+      - fgt
+    contents:
+      # Man pages (committed, so no Go toolchain needed to package them).
+      - src: docs/man/*.1
+        dst: /usr/share/man/man1/
+        file_info:
+          mode: 0644
+      # Shell completions.
+      - src: contrib/completions/fgt.bash
+        dst: /usr/share/bash-completion/completions/fgt
+        file_info:
+          mode: 0644
+      - src: contrib/completions/fgt.zsh
+        dst: /usr/share/zsh/site-functions/_fgt
+        file_info:
+          mode: 0644
+      - src: contrib/completions/_fgt.fish
+        dst: /usr/share/fish/vendor_completions.d/fgt.fish
+        file_info:
+          mode: 0644
+      # License + notice.
+      - src: LICENSE
+        dst: /usr/share/licenses/fortigate-cli/LICENSE
+        file_info:
+          mode: 0644
+      - src: NOTICE
+        dst: /usr/share/licenses/fortigate-cli/NOTICE
+        file_info:
+          mode: 0644
 
 checksum:
   name_template: checksums.txt
+
+# SPDX SBOMs for every archive (syft must be on PATH — installed by the workflow).
+sboms:
+  - id: archives
+    artifacts: archive
+
+# Keyless Sigstore signing of checksums.txt. Consumers verify with:
+#   cosign verify-blob checksums.txt --signature checksums.txt.sig \
+#     --certificate checksums.txt.pem \
+#     --certificate-identity-regexp \
+#       'https://github.com/ciroiriarte/fortigate-cli/.github/workflows/release.yml@refs/tags/v.*' \
+#     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+signs:
+  - cmd: cosign
+    signature: "${artifact}.sig"
+    certificate: "${artifact}.pem"
+    args:
+      - sign-blob
+      - "--output-signature=${signature}"
+      - "--output-certificate=${certificate}"
+      - "${artifact}"
+      - "--yes"
+    artifacts: checksum
+    output: true
+
+# Homebrew tap (macOS + Linuxbrew) as a cask (the `brews`/formula path is
+# deprecated in goreleaser). Requires the tap repo
+# github.com/ciroiriarte/homebrew-tap to exist and a HOMEBREW_TAP_TOKEN secret
+# (a PAT with `contents:write` on that tap repo) exported to the release job.
+# On --snapshot this step is skipped automatically.
+homebrew_casks:
+  - name: fortigate-cli
+    # The cask is named fortigate-cli but the binary inside the archive is fgt.
+    binaries: [fgt]
+    repository:
+      owner: ciroiriarte
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
+    homepage: https://github.com/ciroiriarte/fortigate-cli
+    description: "Unofficial remote CLI for FortiGate / FortiOS (command: fgt)"
+    license: Apache-2.0
+    # Don't fail the whole release if the tap token is absent (e.g. forks).
+    skip_upload: "{{ if index .Env \"HOMEBREW_TAP_TOKEN\" }}false{{ else }}true{{ end }}"
+    manpages:
+      - "man/fgt.1"
+    completions:
+      bash: "completions/fgt.bash"
+      zsh: "completions/fgt.zsh"
+      fish: "completions/_fgt.fish"
 
 changelog:
   disable: true
 
 release:
+  # Publish as a draft; the workflow attaches SBOMs + provenance and then
+  # flips it public once everything verifies.
+  draft: true
   github:
     owner: ciroiriarte
     name: fortigate-cli
   name_template: "v{{ .Version }}"
+  footer: |
+    ---
+    ## Install
+
+    Distro-native repositories (recommended) and verification instructions:
+    https://github.com/ciroiriarte/fortigate-cli#install
+
+    Artifacts are signed with cosign (keyless) and carry SLSA build provenance.

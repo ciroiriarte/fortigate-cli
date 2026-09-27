@@ -1,0 +1,20 @@
+Source: fortigate-cli
+Section: net
+Priority: optional
+Maintainer: Ciro Iriarte <ciro.iriarte+software@gmail.com>
+Build-Depends: debhelper-compat (= 13), golang-go (>= 2:1.22~)
+Standards-Version: 4.6.2
+Homepage: https://github.com/ciroiriarte/fortigate-cli
+Rules-Requires-Root: no
+
+Package: fortigate-cli
+Architecture: any
+Depends: ${misc:Depends}
+Provides: fgt
+Description: Unofficial remote CLI for FortiGate/FortiOS (command: fgt)
+ fgt is an unofficial, remote-first command-line client for the FortiGate /
+ FortiOS REST API (/api/v2/). It talks to the appliance over HTTPS only;
+ nothing is installed on the device. cmdb paths configure, monitor paths
+ report status.
+ .
+ Not affiliated with or endorsed by Fortinet, Inc.

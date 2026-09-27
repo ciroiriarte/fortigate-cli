@@ -1,0 +1,35 @@
+<!--
+  OBS source services for the fortigate-cli package.
+
+  The go_modules and obs_scm services run in `manual` mode: OBS build chroots
+  are network-restricted, so we fetch the source snapshot and vendor the Go
+  dependencies OUTSIDE the build and commit the results (the .obscpio snapshot
+  and vendor.tar.gz). The %build step then compiles fully offline with
+  `-mod=vendor`.
+
+  To cut a new release into OBS, run packaging/scripts/update-obs.sh (it pins
+  `revision` to the tag's commit SHA, runs these services, and commits). Never
+  point OBS at a moving branch or "latest tag".
+-->
+<services>
+  <service name="obs_scm" mode="manual">
+    <param name="url">https://github.com/ciroiriarte/fortigate-cli.git</param>
+    <param name="scm">git</param>
+    <!-- Pinned to the immutable commit SHA of the release tag by update-obs.sh. -->
+    <param name="revision">REPLACE_WITH_TAG_COMMIT_SHA</param>
+    <param name="version">REPLACE_WITH_VERSION</param>
+    <param name="versionformat">@PARENT_TAG@</param>
+    <param name="versionrewrite-pattern">v(.*)</param>
+    <param name="versionrewrite-replacement">\1</param>
+    <param name="filename">fortigate-cli</param>
+  </service>
+
+  <service name="tar" mode="buildtime"/>
+  <service name="set_version" mode="buildtime"/>
+
+  <!-- Vendors Go modules into vendor.tar.gz. Run out-of-band, commit the result. -->
+  <service name="go_modules" mode="manual">
+    <param name="archive">fortigate-cli-*.obscpio</param>
+    <param name="vendorname">vendor</param>
+  </service>
+</services>

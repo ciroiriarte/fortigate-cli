@@ -34,9 +34,102 @@ provider, but there is **no standalone CLI binary**. `fgt` fills that gap.
 - **Schema-aware**: `fgt schema <path>` shows any object's per-build field schema
   and can scaffold new curated commands (`--gen`).
 
-## Install / build
+## Install
 
-Requires Go 1.22+.
+`fgt` is a single static binary with no runtime dependencies. Pick your lane:
+
+| Audience | Recommended | What you get |
+|---|---|---|
+| **Servers / workstations** | Native repo (`zypper`/`dnf`/`apt`) | Auto-updates, signed by the repo key, man pages + completions installed |
+| **CI, containers, no-root** | Binary download | 5-second `curl \| tar`, no root, no key import |
+| **macOS / Windows / build-from-source** | See below | — |
+
+The package is named **`fortigate-cli`**; the command it installs is **`fgt`**
+(`apt install fgt` / `zypper in fgt` also resolve, via a virtual provide).
+
+> `fgt` is unofficial and runs **only on your machine**, talking to the
+> FortiGate over HTTPS `/api/v2/`. Nothing is installed on the appliance, there
+> is no telemetry, and all actions run under your API token's permissions.
+
+### Native package repositories (recommended)
+
+Built and signed by the [openSUSE Build Service][obs]. Replace the distro token
+in the URL with yours (`Debian_12`, `xUbuntu_24.04`, `Fedora_41`, …).
+
+<details><summary><b>openSUSE (Tumbleweed / Leap)</b></summary>
+
+```sh
+sudo zypper addrepo https://download.opensuse.org/repositories/home:/ciriarte:/fortigate-cli/openSUSE_Tumbleweed/home:ciriarte:fortigate-cli.repo
+sudo zypper refresh   # accept the repo signing key when prompted
+sudo zypper install fortigate-cli
+```
+</details>
+
+<details><summary><b>Fedora / RHEL / Alma / Rocky</b></summary>
+
+```sh
+sudo dnf config-manager addrepo --from-repofile=https://download.opensuse.org/repositories/home:/ciriarte:/fortigate-cli/Fedora_41/home:ciriarte:fortigate-cli.repo
+sudo dnf install fortigate-cli
+```
+</details>
+
+<details><summary><b>Debian / Ubuntu</b> (Deb822, isolated keyring)</summary>
+
+```sh
+sudo install -m0755 -d /etc/apt/keyrings
+curl -fsSL "https://download.opensuse.org/repositories/home:/ciriarte:/fortigate-cli/Debian_12/Release.key" \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/fortigate-cli.gpg
+# Swap Debian_12 for Debian_11, xUbuntu_24.04, xUbuntu_22.04 as needed:
+echo "deb [signed-by=/etc/apt/keyrings/fortigate-cli.gpg] https://download.opensuse.org/repositories/home:/ciriarte:/fortigate-cli/Debian_12/ ./" \
+  | sudo tee /etc/apt/sources.list.d/fortigate-cli.list
+sudo apt-get update && sudo apt-get install fortigate-cli
+```
+</details>
+
+### Direct binary download (no root, CI)
+
+```sh
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')"
+VERSION="1.0.0"   # or the latest tag from the Releases page
+curl -fsSL "https://github.com/ciroiriarte/fortigate-cli/releases/download/v${VERSION}/fortigate-cli_${VERSION}_${OS}_${ARCH}.tar.gz" \
+  | tar -xz fgt
+install -Dm0755 fgt ~/.local/bin/fgt   # ensure ~/.local/bin is on your PATH
+```
+
+`.deb`/`.rpm` files are also attached to each release for air-gapped/offline
+installs (they carry the man pages and completions too).
+
+### macOS / Linux — Homebrew
+
+```sh
+brew install ciroiriarte/tap/fortigate-cli
+```
+
+Installs `fgt` plus man pages and completions on both macOS and Linuxbrew.
+
+### Verify a release (cosign + provenance)
+
+Release artifacts are checksummed, signed keyless with [cosign][cosign], and
+carry SLSA build provenance.
+
+```sh
+# checksum
+sha256sum --ignore-missing -c checksums.txt
+
+# publisher identity (keyless)
+cosign verify-blob checksums.txt \
+  --signature checksums.txt.sig --certificate checksums.txt.pem \
+  --certificate-identity-regexp 'https://github.com/ciroiriarte/fortigate-cli/.github/workflows/release.yml@refs/tags/v.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+
+# build provenance
+gh attestation verify fortigate-cli_*_linux_amd64.tar.gz --repo ciroiriarte/fortigate-cli
+```
+
+### Build from source
+
+Requires Go 1.22+ (the pinned toolchain is fetched automatically).
 
 ```sh
 git clone https://github.com/ciroiriarte/fortigate-cli
@@ -46,20 +139,20 @@ make build       # produces ./fgt
 make check       # fmtcheck + vet + test + build (run before committing)
 ```
 
-### Man pages & shell completions
-
-Pre-generated man pages live in [`docs/man/`](docs/man/) and completion scripts
-in [`contrib/completions/`](contrib/completions/) (regenerate with `make docs`):
+Man pages live in [`docs/man/`](docs/man/) and completions in
+[`contrib/completions/`](contrib/completions/) (regenerate with `make docs`).
+Native/downloaded packages install both automatically; for a source build:
 
 ```sh
-# man pages
 sudo cp docs/man/*.1 /usr/local/share/man/man1/ && man fgt
-
-# bash completion (persistent)
-sudo cp contrib/completions/fgt.bash /etc/bash_completion.d/fgt
-# …or per-shell, no install:
 source <(fgt completion bash)      # also: zsh | fish | powershell
 ```
+
+Packagers and the release pipeline are documented in
+[`packaging/obs/README.md`](packaging/obs/README.md).
+
+[obs]: https://build.opensuse.org
+[cosign]: https://github.com/sigstore/cosign
 
 ## Configure
 

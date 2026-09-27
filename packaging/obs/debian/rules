@@ -1,0 +1,45 @@
+#!/usr/bin/make -f
+# Debian packaging for fortigate-cli, built offline in the OBS chroot from
+# the committed vendor/ tree. We drive the Go build by hand (not dh-golang)
+# so the vendored modules and ldflags version stamping are explicit.
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export CGO_ENABLED = 0
+export GOFLAGS = -mod=vendor -buildvcs=false
+# go.mod pins a newer toolchain; force the chroot's local go so no network
+# toolchain download is attempted inside the sandboxed build.
+export GOTOOLCHAIN = local
+export GOCACHE = $(CURDIR)/.gocache
+export GOPATH = $(CURDIR)/.gopath
+
+IMPORT_PATH := github.com/ciroiriarte/fortigate-cli
+VERSION := $(shell dpkg-parsechangelog -SVersion | sed 's/-[^-]*$$//')
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	go build -trimpath \
+	  -ldflags "-X $(IMPORT_PATH)/internal/version.Version=$(VERSION) \
+	            -X $(IMPORT_PATH)/internal/version.Commit=obs \
+	            -X $(IMPORT_PATH)/internal/version.Date=$(shell date -u -d @$${SOURCE_DATE_EPOCH:-$$(date +%s)} +%Y-%m-%dT%H:%M:%SZ)" \
+	  -o fgt ./cmd/fgt
+
+override_dh_auto_test:
+	go test ./...
+
+override_dh_auto_install:
+	install -Dpm0755 fgt debian/fortigate-cli/usr/bin/fgt
+	install -dpm0755 debian/fortigate-cli/usr/share/man/man1
+	install -pm0644 docs/man/*.1 debian/fortigate-cli/usr/share/man/man1/
+	install -Dpm0644 contrib/completions/fgt.bash \
+	  debian/fortigate-cli/usr/share/bash-completion/completions/fgt
+	install -Dpm0644 contrib/completions/fgt.zsh \
+	  debian/fortigate-cli/usr/share/zsh/vendor-completions/_fgt
+	install -Dpm0644 contrib/completions/_fgt.fish \
+	  debian/fortigate-cli/usr/share/fish/vendor_completions.d/fgt.fish
+
+# The binary is a stripped static Go binary; skip dwz/strip surprises.
+override_dh_dwz:
+override_dh_auto_clean:
+	rm -rf .gocache .gopath fgt

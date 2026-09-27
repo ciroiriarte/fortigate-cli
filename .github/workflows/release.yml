@@ -1,0 +1,68 @@
+name: release
+
+# Tag-triggered GitHub release channel. Produces signed, attested static
+# binaries + .deb/.rpm + archives + SBOMs. The distro-native channel (OBS)
+# is updated separately from the same tag — see packaging/obs/README.md.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # create the GitHub Release and upload assets
+  id-token: write # cosign keyless (OIDC) + build-provenance attestations
+  attestations: write # actions/attest-build-provenance
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    concurrency:
+      group: release-${{ github.ref_name }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          # Keep in lockstep with the `toolchain` pin in go.mod and ci.yml.
+          go-version: "1.26.6"
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Verify the tag points at this commit, then run the CI gates
+        run: |
+          test "$(git rev-list -n1 "$GITHUB_REF_NAME")" = "$GITHUB_SHA"
+          make check
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Install syft (SBOM generator)
+        uses: anchore/sbom-action/download-syft@v0
+
+      - name: Run goreleaser (draft release + signing + SBOMs)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PAT with contents:write on ciroiriarte/homebrew-tap. If the secret
+          # is unset the var is still defined (empty), and goreleaser skips the
+          # Homebrew upload rather than failing the release.
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      # SLSA build provenance for every released artifact. `subject-checksums`
+      # expands checksums.txt into one attested subject per archive/package.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-checksums: dist/checksums.txt
+
+      - name: Publish the draft release
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

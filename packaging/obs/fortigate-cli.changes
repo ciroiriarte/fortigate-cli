@@ -1,0 +1,6 @@
+-------------------------------------------------------------------
+Sat Sep 27 00:00:00 UTC 2026 - Ciro Iriarte <ciro.iriarte+software@gmail.com>
+
+- Initial OBS packaging for fortigate-cli (the `fgt` CLI).
+  Builds the static binary from vendored Go modules, installs man pages
+  and shell completions. Distro-native channel alongside GitHub releases.
