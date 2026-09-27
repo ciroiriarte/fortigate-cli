@@ -151,6 +151,9 @@ release:
   # Publish as a draft; the workflow attaches SBOMs + provenance and then
   # flips it public once everything verifies.
   draft: true
+  # Tags like v1.2.3-rc1 / -beta / -alpha publish as GitHub pre-releases
+  # (never shown as "Latest"); bare vX.Y.Z tags publish as full releases.
+  prerelease: auto
   github:
     owner: ciroiriarte
     name: fortigate-cli
